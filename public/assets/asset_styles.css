@@ -1,0 +1,80 @@
+.vote-container {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center; 
+    height: 1em;
+    aspect-ratio: 72/33;
+}
+
+.position-absolute {
+    position: absolute;
+}
+
+.vote-button {
+	aspect-ratio: 36/33;
+    height: 1em;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background-size: cover;
+    background-position: center;
+}
+
+.vote-button-clear {
+    opacity: 0;
+}
+
+.vote-button-up-empty {
+    background-image: url('images/biceps_up_empty.svg');
+}
+
+.vote-button-down-empty {
+    background-image: url('images/biceps_down_empty.svg');
+}
+
+.vote-button-up-checked {
+    background-image: url('images/biceps_up_clicked.svg');
+}
+
+.vote-button-down-checked {
+    background-image: url('images/biceps_down_clicked.svg');
+}
+
+.star-container {
+	height: 1em;
+	width: 5em;
+	padding: 0px;
+	border-width: 0px;
+	background-image: url('images/5_stars_empty.svg'); 
+	background-size: 5em 1em;
+	display: flex;
+	justify-content: center;
+}
+		
+.star-container-1 {
+	background-image: url('images/star1.svg'); 
+}
+		
+.star-container-2 {
+	background-image: url('images/star2.svg'); 
+}
+		
+.star-container-3 {
+	background-image: url('images/star3.svg'); 
+}
+		
+.star-container-4 {
+	background-image: url('images/star4.svg'); 
+}
+		
+.star-container-5 {
+	background-image: url('images/star5.svg'); 
+}
+		
+.star {
+	padding: 0px;
+	border-width: 0px;
+	width: 20%;
+	height: 100%;
+	opacity: 0
+}

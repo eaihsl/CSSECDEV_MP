@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Rating</title>
+    <link rel="stylesheet" href="asset_styles.css">
+</head>
+<body>
+	<div id="star-container" class="star-container">
+		<button id="star1" class="star" onclick="rate(1)"></button>
+		<button id="star2" class="star" onclick="rate(2)"></button>
+		<button id="star3" class="star" onclick="rate(3)"></button>
+		<button id="star4" class="star" onclick="rate(4)"></button>
+		<button id="star5" class="star" onclick="rate(5)"></button>
+	</div>
+
+    <script>
+        function rate(rating) {
+		const starContainer = document.getElementById('star-container');
+		starContainer.className = `star-container star-container-${rating}`;
+		//console.log(`Rating: ${rating}`);
+	}
+    </script>
+</body>
+</html>

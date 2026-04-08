@@ -1,0 +1,79 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark" id="navbar-container">
+    <div class="container">
+        
+        <!-- Logo -->
+        <div class="logo" style="display: flex;">
+            <a class="navbar-brand" href="/">Spotter <img src="/assets/images/logo.svg" alt="" style="width: 40px;"></a>  
+        </div>
+        
+        <!-- Search -->
+        <div class="input-group ml-5">
+            <input type="text" class="form-control border-left-0 border-0" id="searchQueryNavbar" placeholder="Search" aria-describedby="search-addon" name="navbar-search" value="{{searchName}}">
+            <div class="input-group-append">
+                <span class="btn btn-warning border-0" id="search-addon">Search</span>
+            </div>
+        </div>
+
+        <div class="ml-5"></div>
+        <div class="ml-5"></div>
+        <div class="ml-5"></div>
+        <div class="ml-5"></div>
+        <div class="ml-5"></div>
+
+        <a class="nav-link btn btn-navbar mr-3" id="aboutUsButton" data-toggle="modal" data-target="#aboutUsModal">About</a>
+        {{#if isAuthenticated}}
+            <!-- Navbar when user is logged in -->
+            <a class="nav-link btn btn-navbar ml-3" href="/users/profile" id="profileButton">Profile</a>
+            <a class="nav-link btn btn-navbar ml-3" href="/users/logout" id="logoutButton">Logout</a>
+        {{else}}
+            <!-- Navbar when user is logged out -->
+            <a class="nav-link btn btn-navbar" href="" id="loginModalButton" data-toggle="modal" data-target="#loginModal">Login</a>
+            <a class="nav-link btn btn-navbar ml-3" href="" id="registerModalButton" data-toggle="modal" data-target="#registerModal">Register</a>
+        {{/if}}
+
+        <div class="modal fade" id="aboutUsModal" tabindex="-1" aria-labelledby="aboutUsModal" aria-hidden="true" style="color: #333333">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editBusinessProfileModal">About Us</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="modal-body" id="aboutUsBody">
+                        <div class = "row-auto about-us-image">
+                            <img src="assets/about_us_image.jpg">
+                        </div>
+                        <div class = "row-auto">
+                            <h4>References:</h4>
+                        </div>
+                        <div class = "row-auto">
+                            <a href="https://www.mongodb.com/docs/">MongoDB</a>
+                        </div>
+                        <div class = "row-auto">
+                            <a href="https://nodejs.org/docs/latest/api/">NodeJS</a>
+                        </div>
+                        <div class = "row-auto">
+                            <a href="https://getbootstrap.com/docs/4.5/getting-started/introduction/">Bootstrap</a>
+                        </div>
+                        <div class = "row-auto">
+                            <a href="https://api.jquery.com/">JQuery</a>
+                        </div>
+                        <div class = "row-auto">
+                            <a href="https://developer.mozilla.org/en-US/">HTML, CSS, Javascript</a>
+                        </div>
+                        <div class = "row-auto">
+                            <a href="https://www.freepik.com/free-photo/gym-with-indoor-cycling-equipment_22632033.htm#fromView=search&page=1&position=0&uuid=347beacb-527f-4ff0-af29-31d09f7fe57a&query=gym+establishment">Default Establishment Picture</a>
+                        </div>
+                        <div class = "row-auto">
+                            <a href="https://www.freepik.com/free-psd/3d-illustration-person-with-sunglasses_27470334.htm#fromView=search&page=1&position=2&uuid=f237c35f-8331-456f-a312-68d17079f3f4&query=avatar+">Default Avatar Picture</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+</nav>

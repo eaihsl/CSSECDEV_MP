@@ -1,0 +1,213 @@
+<div class="container mt-5">
+    <div class="card text-white search-card">
+        <div class="card-body search-card-body">
+            <form action="/results" method="GET">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="searchNameQuery" name="nameSearch" placeholder="Enter gym name" value="{{searchName}}">
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-control" id="searchDescQuery" name="descSearch" placeholder="Enter gym description" value="{{searchDesc}}">
+                </div>
+
+                <div id="filter-accordion" class="row accordion-link">
+                    <!-- Amenities -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header" id="amenities-heading">
+                                <h2 class="m-0 text-center">
+                                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#amenities-content" aria-expanded="true" aria-controls="amenities-content">
+                                        Select Amenities <span class="oi oi-chevron-bottom"></span>
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="amenities-content" class="collapse" aria-labelledby="amenities-heading" data-parent="#filter-accordion">
+                                <div class="card-body select-items">
+                                    <div class="amenities-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="lockers" name="amenities[]" value="Lockers">
+                                            <label class="form-check-label" for="lockers">Lockers</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="parking" name="amenities[]" value="Parking">
+                                            <label class="form-check-label" for="parking">Parking</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="pool" name="amenities[]" value="Swimming Pool">
+                                            <label class="form-check-label" for="pool">Swimming Pool</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="sauna" name="amenities[]" value="Sauna">
+                                            <label class="form-check-label" for="sauna">Sauna</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="smoothieBar" name="amenities[]" value="Nutrition Bar">
+                                            <label class="form-check-label" for="smoothieBar">Smoothie Bar</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="spaServices" name="amenities[]" value="Spa Services">
+                                            <label class="form-check-label" for="spaServices">Spa Services</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="shower" name="amenities[]" value="Showers">
+                                            <label class="form-check-label" for="shower">Showers</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="wifiAccess" name="amenities[]" value="Free WiFi Access">
+                                            <label class="form-check-label" for="wifiAccess">Free WiFi Access</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="basketballCourt" name="amenities[]" value="Basketball Court">
+                                            <label class="form-check-label" for="basketballCourt">Basketball Court</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="tv" name="amenities[]" value="TV Screens on Equipment">
+                                            <label class="form-check-label" for="tv">TV Screens on Equipment</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header" id="region-heading">
+                                <h2 class="m-0 text-center">
+                                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#region-content" aria-expanded="false" aria-controls="region-content">
+                                        Select Locations
+                                        <span class="oi oi-chevron-bottom"></span>
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="region-content" class="collapse" aria-labelledby="region-heading" data-parent="#filter-accordion">
+                                <div class="card-body select-items">
+                                    <div class="region-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="ncr-east" name="regions[]" value="NCR East">
+                                            <label class="form-check-label" for="ncr-east">NCR East</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="ncr-north" name="regions[]" value="NCR North">
+                                            <label class="form-check-label" for="ncr-north">NCR North</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="ncr-west" name="regions[]" value="NCR West">
+                                            <label class="form-check-label" for="ncr-west">NCR West</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="ncr-south" name="regions[]" value="NCR South">
+                                            <label class="form-check-label" for="ncr-south">NCR South</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="bulacan" name="regions[]" value="Bulacan">
+                                            <label class="form-check-label" for="bulacan">Bulacan</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="cavite" name="regions[]" value="Cavite">
+                                            <label class="form-check-label" for="cavite">Cavite</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="laguna" name="regions[]" value="Laguna">
+                                            <label class="form-check-label" for="laguna">Laguna</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="rizal" name="regions[]" value="Rizal">
+                                            <label class="form-check-label" for="rizal">Rizal</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="filter-accordion" class="row accordion-link">
+                    <!-- Rating -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header" id="rating-heading">
+                                <h2 class="m-0 text-center">
+                                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#rating-content" aria-expanded="false" aria-controls="rating-content">
+                                        Select Average Rating
+                                        <span class="oi oi-chevron-bottom"></span>
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="rating-content" class="collapse" aria-labelledby="rating-heading" data-parent="#filter-accordion">
+                                <div class="card-body select-items">
+                                    <div class="region-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="zero" name="ratings[]" value="0">
+                                            <label class="form-check-label" for="zero">Unrated</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="one" name="ratings[]" value="1">
+                                            <label class="form-check-label" for="one">1.0 - 1.9</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="two" name="ratings[]" value="2">
+                                            <label class="form-check-label" for="two">2.0 - 2.9</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="three" name="ratings[]" value="3">
+                                            <label class="form-check-label" for="three">3.0 - 3.9</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="four" name="ratings[]" value="4">
+                                            <label class="form-check-label" for="four">4.0 - 4.9</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="five" name="ratings[]" value="5">
+                                            <label class="form-check-label" for="five">5</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Sort by -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header" id="rating-heading">
+                                <h2 class="m-0 text-center">
+                                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#sortby-content" aria-expanded="false" aria-controls="sortby-content">
+                                        Sort by
+                                        <span class="oi oi-chevron-bottom"></span>
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="sortby-content" class="collapse" aria-labelledby="sortby-heading" data-parent="#filter-accordion">
+                                <div class="card-body select-items">
+                                    <div class="region-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" id="alphabetically" name="sortby" value="1">
+                                            <label class="form-check-label" for="alphabetically">Alphabetically</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" id="highest-rating" name="sortby" value="2">
+                                            <label class="form-check-label" for="highest-rating">Highest Rating</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" id="lowest-rating" name="sortby" value="3">
+                                            <label class="form-check-label" for="lowest-rating">Lowest Rating</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" id="most-reviews" name="sortby" value="4">
+                                            <label class="form-check-label" for="most-reviews">Most Reviews</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" id="least-reviews" name="sortby" value="5">
+                                            <label class="form-check-label" for="least-reviews">Least Reviews</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+                <button type="submit" class="btn btn-primary btn-block search-btn">Search</button>
+            </form>
+        </div>
+    </div>
+</div>

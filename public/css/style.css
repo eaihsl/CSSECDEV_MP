@@ -1,0 +1,24 @@
+.image-upload-container {
+    border: 1px solid #ced4da;
+    padding: 1px; 
+    display: flex;
+    overflow: hidden; 
+    height: 156px;
+    width: 156px;
+    
+}
+
+.profile-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+}
+
+.image-upload-container label {
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+textarea {
+    resize: none;
+}

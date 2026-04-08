@@ -1,0 +1,174 @@
+<div class = "bg">
+    <div class="establishment-details">
+        <div class = "left-establishment-details">
+            <h1><strong>{{establishment.name}}</strong></h1>
+            <img src="/establishment_pictures/{{establishment.image}}" alt="{{establishment.name}}" class="establishment-image">
+        </div>
+        <div class = "right-establishment-details">
+            <a href="https://spotter-gym-reviews.onrender.com/users/{{establishment.owner._id}}/profile">
+                <strong>Owner:</strong> {{establishment.owner.username}}
+            </a>
+            <p><strong>Rating:</strong> {{#if (equal establishment.rating 0)}}Unrated{{else}}{{establishment.rating}}{{/if}}</p>
+            <p><strong>Location:</strong> {{establishment.location}}</p>
+            <p><strong>Amenities:</strong> {{#each establishment.amenities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</p>
+            <p><strong>Contact Number:</strong> {{establishment.contactNumber}}</p> 
+            <p><strong>Address:</strong> {{establishment.address}}</p>
+            <p><strong>About Us:</strong></p>
+            <p>{{establishment.shortDescription}}</p>
+
+            {{#if isBusiness}}
+            {{else}}
+                <button class="btn btn-primary" data-toggle="modal" data-target="#createReviewModal">Post Review</button>
+            {{/if}}
+        </div>
+    </div>
+
+</div>
+
+<!-- Reviews Section -->
+<div class="reviews-section">
+    <h2>Reviews</h2>
+    <div class="input-group col-md-4 mt-3 mb-3">
+        <input type="text" class="form-control border-left-0 border-0" id="searchQueryReview" placeholder="Enter review keywords" aria-describedby="search-addon" name="review-search" value="{{searchReview}}">
+        <div class="input-group-append">
+            <span class="btn btn-primary border-0" id="search-review" data-establishment-id="{{establishment._id}}">Search</span>
+        </div>
+    </div>
+
+    {{#if reviews.length}}
+        {{#each reviews}}
+        <div class="review-card">
+            <a href="https://spotter-gym-reviews.onrender.com/users/{{this.userId._id}}/profile">
+                {{!-- <strong>Owner:</strong> {{establishment.owner.username}} --}}
+                <p><strong>Reviewed by:</strong> {{this.userId.username}}</p>
+            </a>
+            {{!-- <p><strong>Reviewed by:</strong> {{this.userId.username}}</p> --}}
+            <p><strong>Rating:</strong> <span class="rating-stars">{{this.stars}}</span></p>
+            <p class="text-wrap"><strong>Review:</strong> {{this.reviewText}} {{#if this.edited}}<em class="text-muted">(edited)</em>{{/if}}</p>
+            <p><strong>Posted at:</strong> {{this.createdAt}}</p>
+            {{#if this.images}}
+                <p><strong>Images: </strong></p>
+                <div class="col-md-12 mt-2">
+                    {{#each this.images}}
+                        <img src="/review_pictures/{{this.src}}" alt="Failed to load image" data-toggle="modal" data-target="#imageModal{{@index}}{{this.reviewId}}">
+                        
+                        <!-- Image Modal -->
+                        <div class="modal fade" id="imageModal{{@index}}{{this.reviewId}}" tabindex="-1" aria-labelledby="imageModalLabel{{@index}}{{this.reviewId}}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="imageModalLabel{{@index}}{{this.reviewId}}">Full Image</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body text-center full-image">
+                                        <img src="/review_pictures/{{this.src}}" class="profile-image" alt="Failed to load image">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {{/each}}
+                </div>
+            {{/if}}
+            
+            <div class="btn-group mt-2" role="group">
+                <button class="btn btn-outline-success like-btn" 
+                        onclick="voteReview('{{this._id}}', 'like')">
+                    Like ({{this.likes.length}})
+                </button>
+                
+                <button class="btn btn-outline-danger dislike-btn" 
+                        onclick="voteReview('{{this._id}}', 'dislike')">
+                    Dislike ({{this.dislikes.length}})
+                </button>
+            </div>
+            
+            <!-- Comment Button -->
+            <button class="btn btn-link"
+                    onclick="openCommentModal('{{_id}}', '{{../establishment._id}}')"
+                    data-toggle="modal"
+                    data-target="#commentModal">
+            View Comments
+            </button>
+
+        </div>
+        {{/each}}
+    {{else}}
+        {{#if isSearching}}
+            <p>No reviews with this keyword.</p>
+        {{else}}
+            <p>No reviews yet. Be the first to review!</p>
+        {{/if}}
+    {{/if}}
+</div>
+
+<div class="modal fade" id="commentModal" tabindex="-1" role="dialog" aria-labelledby="commentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="commentModalLabel">Comments</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body" id="commentModalBody">
+        <p>Loading comments...</p>
+        {{!-- JS will replace this with actual comment list --}}
+      </div>
+
+      <input type="hidden" id="currentReviewId">
+      <input type="hidden" id="currentEstablishmentId">
+
+      <div class="modal-footer flex-column">
+        <textarea class="form-control mb-2" id="commentbox" name="commentbox" rows="3" placeholder="Leave a comment"></textarea>
+        <button class="btn btn-primary btn-block" onclick="post_comment()">Post Comment</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="createReviewModal" tabindex="-1" aria-labelledby="createReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reviewModalLabel">Create a Review</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <form id="createReviewForm">
+                <div class="modal-body" id="reviewModalBody">
+                    <input type="hidden" id="establishmentId" value="{{establishment._id}}">
+                    <!-- Rating Dropdown -->
+                    <label for="reviewRating" class="form-label">Rating:</label>
+                    <select class="form-select" id="reviewRating" name="reviewRating">
+                        <option value="1">1 - Worst</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5" selected>5 - Best</option>
+                    </select>
+
+                    <textarea class="commentbox form-control mt-3" id="reviewbox" name="reviewbox" rows="4" placeholder="Leave a review"></textarea>
+
+                    <!-- Image Upload -->
+                    <label for="reviewImages" class="form-label mt-3">Upload Images:</label>
+                    <input type="file" class="form-control" id="reviewImages" name="reviewImages" multiple>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/scripts/voteReview.js"></script>
+<script src="/scripts/createReview.js"></script>
+<script src="/scripts/comment.js"></script>

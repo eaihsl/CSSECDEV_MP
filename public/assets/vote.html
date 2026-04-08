@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote Example</title>
+    <link rel="stylesheet" href="asset_styles.css">
+</head>
+<body>
+	<div class="vote-container">
+		<span class="vote-button vote-button-up-empty" id="upvote"></span>
+		<span class="vote-button vote-button-down-empty" id="downvote"></span>
+		<div class="position-absolute">
+			<button class="vote-button vote-button-clear" onclick="vote('up')"></button>
+			<button class="vote-button vote-button-clear" onclick="vote('down')"></button>
+		</div>
+	</div>
+
+    <script>
+        function vote(choice) {
+            const upButton = document.getElementById('upvote');
+            const downButton = document.getElementById('downvote');
+            const upClass = upButton.classList;
+            const downClass = downButton.classList;
+			
+	    function toggleUp() {
+		upButton.classList.toggle('vote-button-up-empty');
+                    upButton.classList.toggle('vote-button-up-checked');
+	    }
+			
+	    function toggleDown() {
+		    downButton.classList.toggle('vote-button-down-empty');
+                    downButton.classList.toggle('vote-button-down-checked');
+	    }
+
+            if (upClass.contains('vote-button-up-empty') && downClass.contains('vote-button-down-empty')) {
+                if (choice === 'up') {
+                    toggleUp();
+					//console.log("Upvoting");
+                } else {
+                    toggleDown();
+					//console.log("Downvoting");
+                }
+            } else if(upClass.contains('vote-button-up-checked') && choice === 'up') {
+				toggleUp();
+				//console.log("Removing upvote");
+	    } else if(downClass.contains('vote-button-down-checked') && choice === 'down') {
+				toggleDown();
+				//console.log("Removing downvote");
+	    } else {
+                toggleUp();
+                toggleDown();
+				/*
+				if(choice === 'up') {
+					console.log("Upvoting");
+				} else console.log("Downvoting");*/
+            }
+        }
+    </script>
+</body>
+</html>

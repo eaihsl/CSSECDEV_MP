@@ -1,0 +1,111 @@
+.accordion-link {
+    display:flex;
+    justify-content: space-between;
+}
+
+.search-card-body {
+    background-color: #485e58;
+    
+}
+
+.search-card {
+    width: 55%;
+    border:none;
+    border-radius:25px;
+}
+
+.search-card-body {
+    border-radius: 20px;
+}
+
+.container.mt-5 {
+    display: flex;
+    justify-content: center;
+    margin-top:300px;
+}
+
+.select-items label {
+    color: black;
+}
+
+.bg {
+    display: flex;
+    padding: 40px;
+    justify-content: center;
+}
+
+.blur {
+    position: fixed;
+    top:0;
+    left: 0;
+    right: 0;
+    padding-top: 40px;
+    margin-top: 66px;
+    width: 100%;
+    height: 100vh; /* Make it take full viewport height */
+    background: rgba(255, 255, 255, 0.5);
+    background-image: url(https://www.commercialhomegym.com/cdn/shop/files/slider_bg_gym.jpg?v=1701987096&width=3840);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    overflow: scroll; /* Make sure content is not clipped */
+    padding-bottom: 40px;
+}
+ .review {
+	width: 750px;
+	height: 100px;
+	border: 1px solid #495e57;
+	background-color: #495e57;
+	border-radius: 25px;
+	margin: 30px;
+	margin-top: 0px;
+	display:flex;
+}
+
+.review .gymthumbnail {
+	margin-top: -1px;
+	margin-left: -1px;
+}
+
+ .review .stars {
+	color:#f5f5f5;
+	margin-left: 5px;
+	margin-bottom: -10px;
+	padding: 5px;
+	line-height: 10px;
+	display: flex;
+}
+
+ .review .reviewtext {
+	color:#f5f5f5;
+	margin-top: 12px;
+	margin-left: 5px;
+	padding: 5px;
+	line-height: 10px;
+}
+
+.gymthumbnail img {
+    border-top-left-radius: 25px;
+    border-bottom-left-radius: 25px;
+    width: 200px;
+    height: 100px;
+}
+
+a:link {
+text-decoration: none;
+}
+
+a:visited {
+text-decoration: none;
+}
+
+a:hover {
+text-decoration: none;
+}
+
+a:active {
+text-decoration: none;
+}

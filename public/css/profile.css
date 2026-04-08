@@ -1,0 +1,229 @@
+body {
+    margin: 0;
+    background-image: url(https://st2.depositphotos.com/1875497/10890/i/600/depositphotos_108901614-stock-photo-blur-gym-and-fitness-room.jpg);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    background-size: cover;
+    font-family: Arial, sans-serif;
+}
+
+/* Profile Container */
+.profile-container {
+    display: flex; 
+    flex-direction: column; 
+    margin-top: 30px;
+    margin-right:5%;    
+}
+
+.profile-card {
+    background-color: #495e57;
+    padding: 20px;
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    width: 550px;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2);
+	height: 250px;
+    margin-top:3%;
+    margin-left:10%;}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+}
+
+.profile-pic {
+    width: 120px;
+    height: 120px;
+    border-radius: 25px;
+    object-fit: cover;
+    margin-right: 20px;
+}
+
+.profile-text h2 {
+    margin: 0;
+    color: #fff;
+}
+
+.profile-text p {
+    color: #ddd;
+    margin: 5px 0;
+}
+
+.profile-text textarea {
+    width: 100%;
+    padding: 5px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    background: #f5f5f5;
+    color: #333;
+    resize: none;
+}
+
+/* Gym and Review Sections */
+.gym-container{
+    margin-right:5%;
+    margin-left:5%;
+    /*overflow:scroll;*/
+}
+
+.review-container {
+    margin-right:5%;
+    margin-left:5%;
+}
+
+.establishments-container{
+    display: flex;
+    justify-content: center;
+}
+
+.gym-card, .review-card, .gym-card-home {
+    display: flex;
+    width: 600px;
+    height: auto;
+    background-color: #495e57;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    color: #fff;
+    align-items: center;
+    line-height: 100%;
+}
+
+.gym-card-home, .review-card-profile {
+    display: flex;
+    flex-direction: column;
+    width: 600px;
+    height: auto;
+    background-color: #495e57;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    color: #fff;
+    align-items: center;
+    line-height: 100%;
+}
+
+.gym-card{
+    cursor: pointer;
+}
+
+.gym-card img {
+    object-fit: cover;
+    width: 100%;
+    height: 120px;
+    border-radius: 10px;
+    margin-right: 15px;
+}
+
+.gym-card-home img {
+    object-fit: cover;
+    width: 100%;
+    height: 120px;
+    border-radius: 10px;
+}
+
+.review-card-profile img {
+    object-fit: cover;
+    width: 100%;
+    height: 120px;
+    border-radius: 10px;
+}
+
+.review-card-profile img {
+    object-fit: cover;
+    width: 600px;
+    height: 120px;
+    border-radius: 10px;
+    margin-left : 20px;
+}
+
+.review-card img {
+    object-fit: cover;
+    width: 120px;
+    height: 100%;
+    border-radius: 10px;
+    margin-right: 15px;
+}
+
+.review-card .modal-body img {
+    width: 100%;  
+    height: auto; 
+    object-fit: contain;
+    max-height: 90vh;
+}
+
+.gym-card .modal-body img {
+    width: 100%;  
+    height: auto; 
+    object-fit: contain;
+    max-height: 90vh;
+}
+
+.gym-details, .review-details {
+    flex-grow: 1;
+    padding: 10px;
+    padding-left : 30px;
+}
+
+.gym-details h3, .review-details h3 {
+    margin: 5px 0;
+    font-size: 18px;
+    padding-left : 10px;
+}
+
+.gym-details p, .review-details p {
+    font-size: 14px;
+    color: #ddd;
+    width: 600px;
+    padding-left : 10px;
+    overflow : hidden;
+}
+
+/* Scrollbar Fix */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888; 
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555; 
+}
+
+/* Edit & Delete Buttons */
+button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+#editProfileButton, .editGymButton {
+    background-color: #007bff;
+    color: white;
+}
+
+#editProfileButton:hover, .editGymButton:hover {
+    background-color: #0056b3;
+}
+
+.delete-btn {
+    background-color: #ff4d4d;
+    color: white;
+}
+
+.delete-btn:hover {
+    background-color: #cc0000;
+}
+
+.rating-stars {
+    color: gold;
+}

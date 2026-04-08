@@ -1,0 +1,19 @@
+.navbar {
+    background-color: #45474b;
+    color: #f7f6f9;
+}
+
+.btn-navbar {
+    background-color: white;
+    color: #333a3f;
+}
+
+.btn-navbar:hover {
+    color: #333a3f;
+    background-color: #e2e6ec;
+}
+
+.about-us-image img {
+    width : 100%;
+    height : auto;
+}
