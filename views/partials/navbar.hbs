@@ -22,9 +22,12 @@
 
         <a class="nav-link btn btn-navbar mr-3" id="aboutUsButton" data-toggle="modal" data-target="#aboutUsModal">About</a>
         {{#if isAuthenticated}}
-            <!-- Navbar when user is logged in -->
-            <a class="nav-link btn btn-navbar ml-3" href="/users/profile" id="profileButton">Profile</a>
-            <a class="nav-link btn btn-navbar ml-3" href="/users/logout" id="logoutButton">Logout</a>
+    <!-- Navbar when user is logged in -->
+    {{#if isAdmin}}
+        <a class="nav-link btn btn-navbar ml-3" href="/users/admin/dashboard" id="adminButton">Admin</a>
+    {{/if}}
+    <a class="nav-link btn btn-navbar ml-3" href="/users/profile" id="profileButton">Profile</a>
+    <a class="nav-link btn btn-navbar ml-3" href="/users/logout" id="logoutButton">Logout</a>
         {{else}}
             <!-- Navbar when user is logged out -->
             <a class="nav-link btn btn-navbar" href="" id="loginModalButton" data-toggle="modal" data-target="#loginModal">Login</a>

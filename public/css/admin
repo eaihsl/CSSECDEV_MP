@@ -1,0 +1,5 @@
+/* Admin Dashboard */
+.table-dark th,
+.table-dark td {
+    vertical-align: middle;
+}

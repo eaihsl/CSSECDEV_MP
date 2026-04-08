@@ -1,0 +1,78 @@
+<div class="container mt-4">
+  <div class="row mb-3">
+    <div class="col">
+      <h2 style="color: #fff;">Admin Dashboard</h2>
+      <p style="color: #ddd;">Manage all registered users below.</p>
+    </div>
+  </div>
+
+  <div class="card bg-dark text-white">
+    <div class="card-header">
+      <strong>All Users</strong>
+      <span class="badge badge-secondary ml-2">{{users.length}}</span>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-dark table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each users}}
+          <tr id="user-row-{{_id}}">
+            <td>
+              <a href="/users/{{_id}}/profile" style="color: #f0c040;">{{username}}</a>
+            </td>
+            <td>{{email}}</td>
+            <td>
+              <span class="badge
+                {{#if (equal role 'admin')}}badge-danger{{/if}}
+                {{#if (equal role 'business')}}badge-warning{{/if}}
+                {{#if (equal role 'people')}}badge-info{{/if}}
+              ">{{role}}</span>
+            </td>
+            <td>{{createdAt}}</td>
+            <td>
+              {{#unless (equal role 'admin')}}
+              <button
+                class="btn btn-sm btn-danger"
+                onclick="adminDeleteUser('{{_id}}', '{{username}}')"
+              >Delete</button>
+              {{/unless}}
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function adminDeleteUser(userId, username) {
+  if (!confirm('Are you sure you want to delete user "' + username + '"? This cannot be undone.')) return;
+
+  fetch('/users/admin/deleteUser/' + userId, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.message === 'User deleted successfully.') {
+      const row = document.getElementById('user-row-' + userId);
+      if (row) row.remove();
+    } else {
+      alert('Error: ' + data.message);
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert('Something went wrong.');
+  });
+}
+</script>

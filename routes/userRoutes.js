@@ -10,7 +10,7 @@ const Comment = require('../models/Comment');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
-
+const { isAdmin } = require('../middlewares/authMiddleware');
 const dotenv = require("dotenv");
 dotenv.config();
 const sourceEmail = process.env.SOURCE_EMAIL;
@@ -752,6 +752,85 @@ router.post("/createGymWithImage", gymUpload.single("gymImage"), async (req, res
   } catch (err) {
     console.error("Create Gym Error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+
+// ── ADMIN: view all users ────────────────────────────────────────────────────
+router.get('/admin/dashboard', isAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}, 'username email role profilePicture createdAt').lean();
+    res.render('admin', { users });
+  } catch (err) {
+    console.error('Admin dashboard error:', err);
+    res.status(500).send('Server error');
+  }
+});
+
+// ── ADMIN: delete any user by ID ─────────────────────────────────────────────
+router.delete('/admin/deleteUser/:userId', isAdmin, async (req, res) => {
+  const { userId } = req.params;
+
+  // Prevent admin from deleting themselves
+  if (req.session.user._id === userId) {
+    return res.status(400).json({ message: 'You cannot delete your own account here.' });
+  }
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    // Delete profile picture if not default
+    if (user.profilePicture && user.profilePicture !== 'default_avatar.jpg') {
+      const filePath = path.join(__dirname, '../public/profile_pictures', user.profilePicture);
+      fs.unlink(filePath, (err) => {
+        if (err) console.error('Failed to delete profile picture:', err);
+      });
+    }
+
+    // Delete their reviews and associated comments/images
+    const userReviews = await Review.find({ userId });
+    for (const review of userReviews) {
+      review.images.forEach((img) => {
+        const filePath = path.join('public/review_pictures', img);
+        fs.unlink(filePath, (err) => {
+          if (err) console.error('Failed to delete review image:', err);
+        });
+      });
+      await Comment.deleteMany({ _id: { $in: review.comments } });
+    }
+    await Review.deleteMany({ userId });
+    await Comment.deleteMany({ userId });
+    await Review.updateMany({}, { $pull: { likes: userId, dislikes: userId } });
+
+    // Delete their gyms and gym reviews
+    const userGyms = await Establishment.find({ owner: userId });
+    for (const gym of userGyms) {
+      const gymReviews = await Review.find({ establishmentId: gym._id });
+      for (const review of gymReviews) {
+        review.images.forEach((img) => {
+          const filePath = path.join('public/review_pictures', img);
+          fs.unlink(filePath, (err) => {
+            if (err) console.error('Failed to delete review image:', err);
+          });
+        });
+        await Comment.deleteMany({ _id: { $in: review.comments } });
+      }
+      await Review.deleteMany({ establishmentId: gym._id });
+      if (gym.image && gym.image !== 'default_establishment.jpg') {
+        const gymImagePath = path.join(__dirname, '../public/establishment_pictures', gym.image);
+        fs.unlink(gymImagePath, (err) => {
+          if (err) console.error('Failed to delete gym image:', err);
+        });
+      }
+    }
+    await Establishment.deleteMany({ owner: userId });
+
+    await User.findByIdAndDelete(userId);
+    res.json({ message: 'User deleted successfully.' });
+  } catch (err) {
+    console.error('Admin delete user error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
