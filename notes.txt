@@ -1,0 +1,861 @@
+{{!-- <div class="bg">
+    <div class="profile-container">
+        <div class="profile-card">
+            <div class="profile-info">
+                <img class="profile-pic" src="/profile_pictures/{{user.profilePicture}}" alt="Profile Picture">
+                <div class="profile-text">
+                    <h2>{{user.firstName}} {{user.lastName}}</h2>
+                    <p>{{user.username}}</p>
+                    <label for="bio"></label><textarea id="bio" name="bio" rows="2" cols="50" readonly>{{user.shortDescription}}</textarea>
+                    
+                    <!-- Edit & Delete Profile Buttons -->
+                    <button id="editBusinessProfileButton"  data-toggle="modal" data-target="#editBusinessProfileModal">Edit Profile</button>
+                    <button id="deleteBusinessProfileButton" class="delete-btn" data-toggle="modal" data-target="#deleteModal">Delete Profile</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="gym-container">
+        <div class = "row align-items-center">
+            <div class = "col">
+                <h2>My Establishments</h2>
+            </div>
+
+            <div class = "col-auto mb-3">
+                <button id="createGymButton"  data-toggle="modal" data-target="#createGymModal">New Establishment</button>
+            </div>
+        </div>
+
+        {{#each gyms}}
+        <div class="gym-card">
+            <img src="/establishment_pictures/{{this.image}}" alt="{{this.name}}">
+            <div class="gym-details">
+                <h3>{{this.name}}</h3>
+                <p><strong>Location:</strong> {{this.location}}</p>
+                <p><strong>Amenities:</strong> {{this.amenities}}</p>
+                <p>{{this.shortDescription}}</p>
+
+                <!-- Edit & Delete Gym Buttons -->
+                <button data-id="{{this._id}}" data-toggle="modal" data-target="#editGymModal-{{this._id}}">Edit</button>
+                <button class="delete-btn" data-id="{{this._id}}" data-toggle="modal" data-target="#deleteGymModal-{{this._id}}">Delete</button>
+            </div>
+        </div>
+
+            <div class="modal fade" id="editGymModal-{{this._id}}" tabindex="-1" aria-labelledby="editGymModal-{{this._id}}" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editGymModal-{{this._id}}">{{this.name}}</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+
+                        <div class="modal-body" id="editGymModalBody-{{this._id}}">
+                            <form id="peopleEditForm-{{this._id}}">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="gymName-{{this._id}}">Gym Name:</label>
+                                            <input type="text" class="form-control" id="gymName-{{this._id}}" placeholder="Enter Gym Name" value= "{{this.name}}">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="profilePictureFile">Thumbnail:</label>
+                                        <div class="image-upload-container">
+                                            <img id="profileImagePreview" src="/establishment_pictures/{{this.image}}" alt="Profile Preview" class="profile-image">
+                                        </div>
+
+                                        <div class="form-group">
+                                            <input type="file" class="form-control-file mt-2" id="profilePictureFile" name="profilePicture" accept=".jpg">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="gymDescription-{{this._id}}">Short Description:</label>
+                                            <textarea class="form-control short-desc" id="gymDescription-{{this._id}}" rows="2">{{this.shortDescription}}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="filter-accordion" class="row accordion-link">
+                                    <!-- Amenities -->
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-header" id="amenities-heading">
+                                                <h2 class="m-0 text-center">
+                                                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#amenities-content" aria-expanded="true" aria-controls="amenities-content">
+                                                        Select Amenities <span class="oi oi-chevron-bottom"></span>
+                                                    </button>
+                                                </h2>
+                                            </div>
+                                            <div id="amenities-content" class="collapse" aria-labelledby="amenities-heading" data-parent="#filter-accordion">
+                                                <div class="card-body select-items">
+                                                    <div class="amenities-group">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="lockers" name="amenities[]" value="lockers" {{#if (includes this.amenities "Lockers")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="lockers">Lockers</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="parking" name="amenities[]" value="parking" {{#if (includes this.amenities "Parking")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="parking">Parking</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="pool" name="amenities[]" value="pool" {{#if (includes this.amenities "Swimming Pool")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="pool">Pool</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="sauna" name="amenities[]" value="sauna" {{#if (includes this.amenities "Sauna")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="sauna">Sauna</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="smoothieBar" name="amenities[]" value="smoothieBar" {{#if (includes this.amenities "Nutrition Bar")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="smoothieBar">Smoothie Bar</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="spaServices" name="amenities[]" value="spaServices" {{#if (includes this.amenities "Spa")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="spaServices">Spa Services</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="shower" name="amenities[]" value="shower" {{#if (includes this.amenities "Showers")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="shower">Shower</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="wifiAccess" name="amenities[]" value="wifiAccess" {{#if (includes this.amenities "Free WiFi Access")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="wifiAccess">Wi-Fi Access</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Location -->
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-header" id="region-heading">
+                                                <h2 class="m-0 text-center">
+                                                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#region-content" aria-expanded="false" aria-controls="region-content">
+                                                        Select Location
+                                                        <span class="oi oi-chevron-bottom"></span>
+                                                    </button>
+                                                </h2>
+                                            </div>
+                                            <div id="region-content" class="collapse" aria-labelledby="region-heading" data-parent="#filter-accordion">
+                                                <div class="card-body select-items">
+                                                    <div class="region-group">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" id="ncr-east" name="regions" value="ncr-east"  {{#if (equal this.location "NCR East")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="ncr-east">NCR-East</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" id="ncr-north" name="regions" value="ncr-north" {{#if (equal this.location "NCR North")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="ncr-north">NCR-North</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" id="ncr-west" name="regions" value="ncr-west" {{#if (equal this.location "NCR West")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="ncr-west">NCR-West</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" id="ncr-south" name="regions" value="ncr-south" {{#if (equal this.location "NCR South")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="ncr-south">NCR-South</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" id="bulacan" name="regions" value="bulacan" {{#if (equal this.location "Bulacan")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="bulacan">Bulacan</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" id="cavite" name="regions" value="cavite" {{#if (equal this.location "Cavite")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="cavite">Cavite</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" id="laguna" name="regions" value="laguna" {{#if (equal this.location "Laguna")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="laguna">Laguna</label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" id="rizal" name="regions" value="rizal" {{#if (equal this.location "Rizal")}}checked{{/if}}>
+                                                            <label class="form-check-label" for="rizal">Rizal</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <label class="privacy-policy">
+                                            By clicking Accept Changes, you agree on our <a href="" class="privacy-link">Privacy Policy</a>
+                                        </label>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <button type="submit" class="btn btn-primary btn-block mt-3" id="registerButton">Accept Changes</button>
+                                    </div>
+                                </div>
+
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <div class="modal fade" id="deleteGymModal-{{this._id}}" tabindex="-1" aria-labelledby="deleteGymLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteGymLabel-{{this._id}}">Delete {{this.name}}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="deleteForm">
+                            <div class="form-group">
+                                <label for="confirmDeleteUsername">Username:</label>
+                                <input type="text" class="form-control" id="confirmDeleteUsername" placeholder="Enter Username" required>
+                            </div>
+
+                            <div class="form-group mb-5">
+                                <label for="confirmDeletePassword">Password:</label>
+                                <input type="password" class="form-control" id="confirmDeletePassword" placeholder="Enter Password" required>
+                            </div>
+
+                            <div>
+                                <label>
+                                    <input type = "checkbox"> I fully understand that the following action cannot be undone.
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-block btn-primary login-btn mt-3" id="deleteButton">Confirm Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+
+    <div class="modal fade" id="editBusinessProfileModal" tabindex="-1" aria-labelledby="editBusinessProfileModal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editBusinessProfileModal">Edit Profile</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body" id="editBusinessProfileModalBody">
+                    <form id="businessEditForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editBusinessFirstName">First Name:</label>
+                                    <input type="text" class="form-control" id="editBusinessFirstName" placeholder="{{user.firstName}}" readonly aria-readonly="true">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editBusinessLastName">Last Name:</label>
+                                    <input type="text" class="form-control" id="editBusinessLastName" placeholder="{{user.lastName}}" readonly aria-readonly="true">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="editBusinessPassword">Password:</label>
+                                    <input type="password" class="form-control" id="editBusinessPassword">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="editBusinessConfirmPassword">Confirm Password:</label>
+                                    <input type="password" class="form-control" id="editBusinessConfirmPassword">
+                                </div>
+
+                                <div class="form-group mt-4">
+                                    <label for="accountType">Account Type:</label>
+                                    <select id="accountType" name="accountType" class="form-control" disabled aria-disabled="true">
+                                        <option value="people" {{#if (equal user.role "people")}}selected{{/if}}>Regular User</option>
+                                        <option value="business" {{#if (equal user.role "business")}}selected{{/if}}>Business Owner</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <label for="businessProfilePictureFile">Profile Picture:</label>
+                                <div class="image-upload-container">
+                                    <img id="editBusinessProfileImagePreview" src="/profile_pictures/{{user.profilePicture}}" alt="Profile Preview" class="profile-image">
+                                </div>
+
+                                <div class="form-group">
+                                    <input type="file" class="form-control-file mt-2" id="editBusinessProfilePictureFile" name="businessProfilePicture" accept=".jpg">
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="editBusinessProfileDescription">Short Description:</label>
+                                    <textarea class="form-control short-desc" id="editBusinessProfileDescription" rows="2">{{user.shortDescription}}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary btn-block mt-3" id="editBusinessButton">Accept Changes</button>
+                            </div>
+                        </div>
+                    </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> --}}
+
+
+    {{!-- <div class="modal fade" id="createGymModal" tabindex="-1" aria-labelledby="createGymModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createGymModal">New Establishment</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body" id="createGymModalBody">
+                <form id="peopleEditForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="registerGymName">Gym Name:</label>
+                                <input type="text" class="form-control" id="registerGymName" placeholder="Enter Gym Name">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label for="gymProfilePictureFile">Thumbnail:</label>
+                            <div class="image-upload-container">
+                                <img id="gymProfileImagePreview" src="/profile_pictures/default_establishment.jpg" alt="Profile Preview" class="profile-image">
+                            </div>
+
+                            <div class="form-group">
+                                <input type="file" class="form-control-file mt-2" id="gymProfilePictureFile" name="gymProfilePicturePicture" accept=".jpg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="gymProfilePictureDescription">Short Description:</label>
+                                <textarea class="form-control short-desc" id="gymProfilePictureDescription" rows="2" placeholder="Enter a short description"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="filter-accordion" class="row accordion-link">
+                        <!-- Amenities -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header" id="amenities-heading">
+                                    <h2 class="m-0 text-center">
+                                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#amenities-content" aria-expanded="true" aria-controls="amenities-content">
+                                            Select Amenities <span class="oi oi-chevron-bottom"></span>
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="amenities-content" class="collapse" aria-labelledby="amenities-heading" data-parent="#filter-accordion">
+                                    <div class="card-body select-items">
+                                        <div class="amenities-group">
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="showers" name="amenities[]" value="Showers" {{#if (includes this.amenities "Showers")}}checked{{/if}}>
+                                            <label class="form-check-label" for="showers">Showers</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="lockers" name="amenities[]" value="Lockers" {{#if (includes this.amenities "Lockers")}}checked{{/if}}>
+                                            <label class="form-check-label" for="lockers">Lockers</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="sauna" name="amenities[]" value="Sauna" {{#if (includes this.amenities "Sauna")}}checked{{/if}}>
+                                            <label class="form-check-label" for="sauna">Sauna</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="swimmingPool" name="amenities[]" value="Swimming Pool" {{#if (includes this.amenities "Swimming Pool")}}checked{{/if}}>
+                                            <label class="form-check-label" for="swimmingPool">Swimming Pool</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="wifi" name="amenities[]" value="Free WiFi Access" {{#if (includes this.amenities "Free WiFi Access")}}checked{{/if}}>
+                                            <label class="form-check-label" for="wifi">Free WiFi Access</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="nutritionBar" name="amenities[]" value="Nutrition Bar" {{#if (includes this.amenities "Nutrition Bar")}}checked{{/if}}>
+                                            <label class="form-check-label" for="nutritionBar">Nutrition Bar</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="basketball" name="amenities[]" value="Basketball Court" {{#if (includes this.amenities "Basketball Court")}}checked{{/if}}>
+                                            <label class="form-check-label" for="basketball">Basketball Court</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="tvScreens" name="amenities[]" value="TV Screens on Equipment" {{#if (includes this.amenities "TV Screens on Equipment")}}checked{{/if}}>
+                                            <label class="form-check-label" for="tvScreens">TV Screens on Equipment</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header" id="region-heading">
+                                    <h2 class="m-0 text-center">
+                                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#region-content" aria-expanded="false" aria-controls="region-content">
+                                            Select Location
+                                            <span class="oi oi-chevron-bottom"></span>
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="region-content" class="collapse" aria-labelledby="region-heading" data-parent="#filter-accordion">
+                                    <div class="card-body select-items">
+                                        <div class="region-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="ncr-east" name="regions" value="ncr-east">
+                                                <label class="form-check-label" for="ncr-east">NCR-East</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="ncr-north" name="regions" value="ncr-north">
+                                                <label class="form-check-label" for="ncr-north">NCR-North</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="ncr-west" name="regions" value="ncr-west">
+                                                <label class="form-check-label" for="ncr-west">NCR-West</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="ncr-south" name="regions" value="ncr-south">
+                                                <label class="form-check-label" for="ncr-south">NCR-South</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="bulacan" name="regions" value="bulacan">
+                                                <label class="form-check-label" for="bulacan">Bulacan</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="cavite" name="regions" value="cavite">
+                                                <label class="form-check-label" for="cavite">Cavite</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="laguna" name="regions" value="laguna">
+                                                <label class="form-check-label" for="laguna">Laguna</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="rizal" name="regions" value="rizal">
+                                                <label class="form-check-label" for="rizal">Rizal</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="privacy-policy">
+                                By clicking Establish Gym, you agree on our <a href="" class="privacy-link">Privacy Policy</a>
+                            </label>
+                        </div>
+
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-primary btn-block mt-3" id="registerButton">Establish Gym</button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div> --}}
+
+        {{!-- <div class="modal fade" id="editGymModal-{{this._id}}" tabindex="-1" aria-labelledby="editGymModal-{{this._id}}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editGymModal-{{this._id}}">{{this.name}}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+
+                    <div class="modal-body" id="editGymModalBody-{{this._id}}">
+                        <form id="peopleEditForm-{{this._id}}">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="gymName-{{this._id}}">Gym Name:</label>
+                                        <input type="text" class="form-control" id="gymName-{{this._id}}" placeholder="Enter Gym Name" value= "{{this.name}}">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="profilePictureFile">Thumbnail:</label>
+                                    <div class="image-upload-container">
+                                        <img id="profileImagePreview" src="/establishment_pictures/{{this.image}}" alt="Profile Preview" class="profile-image">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <input type="file" class="form-control-file mt-2" id="profilePictureFile" name="profilePicture" accept=".jpg">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="gymDescription-{{this._id}}">Short Description:</label>
+                                        <textarea class="form-control short-desc" id="gymDescription-{{this._id}}" rows="2">{{this.shortDescription}}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="filter-accordion" class="row accordion-link">
+                                <!-- Amenities -->
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-header" id="amenities-heading">
+                                            <h2 class="m-0 text-center">
+                                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#amenities-content" aria-expanded="true" aria-controls="amenities-content">
+                                                    Select Amenities <span class="oi oi-chevron-bottom"></span>
+                                                </button>
+                                            </h2>
+                                        </div>
+                                        <div id="amenities-content" class="collapse" aria-labelledby="amenities-heading" data-parent="#filter-accordion">
+                                            <div class="card-body select-items">
+                                                <div class="amenities-group">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="lockers" name="amenities[]" value="lockers" {{#if (includes this.amenities "Lockers")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="lockers">Lockers</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="parking" name="amenities[]" value="parking" {{#if (includes this.amenities "Parking")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="parking">Parking</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="pool" name="amenities[]" value="pool" {{#if (includes this.amenities "Swimming Pool")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="pool">Pool</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="sauna" name="amenities[]" value="sauna" {{#if (includes this.amenities "Sauna")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="sauna">Sauna</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="smoothieBar" name="amenities[]" value="smoothieBar" {{#if (includes this.amenities "Nutrition Bar")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="smoothieBar">Smoothie Bar</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="spaServices" name="amenities[]" value="spaServices" {{#if (includes this.amenities "Spa")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="spaServices">Spa Services</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="shower" name="amenities[]" value="shower" {{#if (includes this.amenities "Showers")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="shower">Shower</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="wifiAccess" name="amenities[]" value="wifiAccess" {{#if (includes this.amenities "Free WiFi Access")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="wifiAccess">Wi-Fi Access</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Location -->
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header" id="region-heading">
+                                            <h2 class="m-0 text-center">
+                                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#region-content" aria-expanded="false" aria-controls="region-content">
+                                                    Select Location
+                                                    <span class="oi oi-chevron-bottom"></span>
+                                                </button>
+                                            </h2>
+                                        </div>
+                                        <div id="region-content" class="collapse" aria-labelledby="region-heading" data-parent="#filter-accordion">
+                                            <div class="card-body select-items">
+                                                <div class="region-group">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" id="ncr-east" name="regions" value="ncr-east"  {{#if (equal this.location "NCR East")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="ncr-east">NCR-East</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" id="ncr-north" name="regions" value="ncr-north" {{#if (equal this.location "NCR North")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="ncr-north">NCR-North</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" id="ncr-west" name="regions" value="ncr-west" {{#if (equal this.location "NCR West")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="ncr-west">NCR-West</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" id="ncr-south" name="regions" value="ncr-south" {{#if (equal this.location "NCR South")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="ncr-south">NCR-South</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" id="bulacan" name="regions" value="bulacan" {{#if (equal this.location "Bulacan")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="bulacan">Bulacan</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" id="cavite" name="regions" value="cavite" {{#if (equal this.location "Cavite")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="cavite">Cavite</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" id="laguna" name="regions" value="laguna" {{#if (equal this.location "Laguna")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="laguna">Laguna</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" id="rizal" name="regions" value="rizal" {{#if (equal this.location "Rizal")}}checked{{/if}}>
+                                                        <label class="form-check-label" for="rizal">Rizal</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label class="privacy-policy">
+                                        By clicking Accept Changes, you agree on our <a href="" class="privacy-link">Privacy Policy</a>
+                                    </label>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <button type="submit" class="btn btn-primary btn-block mt-3" id="registerButton">Accept Changes</button>
+                                </div>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="deleteGymModal-{{this._id}}" tabindex="-1" aria-labelledby="deleteGymLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteGymLabel-{{this._id}}">Delete {{this.name}}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="deleteForm">
+                            <div class="form-group">
+                                <label for="confirmDeleteUsername">Username:</label>
+                                <input type="text" class="form-control" id="confirmDeleteUsername" placeholder="Enter Username" required>
+                            </div>
+
+                            <div class="form-group mb-5">
+                                <label for="confirmDeletePassword">Password:</label>
+                                <input type="password" class="form-control" id="confirmDeletePassword" placeholder="Enter Password" required>
+                            </div>
+
+                            <div>
+                                <label>
+                                    <input type = "checkbox"> I fully understand that the following action cannot be undone.
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-block btn-primary login-btn mt-3" id="deleteButton">Confirm Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div> --}}
+
+
+
+        {{!-- <div class="modal fade" id="createGymModal" tabindex="-1" aria-labelledby="createGymModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createGymModal">New Establishment</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body" id="createGymModalBody">
+                <form id="peopleEditForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="registerGymName">Gym Name:</label>
+                                <input type="text" class="form-control" id="registerGymName" placeholder="Enter Gym Name">
+                            </div>
+                            <div class="form-group">
+                                <label for="registerGymContactNumber">Contact Number:</label>
+                                <input type="text" class="form-control" id="registerGymContactNumber" placeholder="Enter Contact Number">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label for="gymProfilePictureFile">Thumbnail:</label>
+                            <div class="image-upload-container">
+                                <img id="gymProfileImagePreview" src="/establishment_pictures/default_establishment.jpg" alt="Profile Preview" class="profile-image">
+                            </div>
+
+                            <div class="form-group">
+                                <input type="file" class="form-control-file mt-2" id="gymProfilePictureFile" name="gymProfilePicturePicture" accept=".jpg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="gymProfilePictureDescription">Short Description:</label>
+                                <textarea class="form-control short-desc" id="gymProfilePictureDescription" rows="2" placeholder="Enter a short description"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="registerGymAddress">Address:</label>
+                                <textarea type="text" class="form-control short-desc" id="registerGymAddress" rows="2" placeholder="Enter Address"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="filter-accordion" class="row accordion-link">
+                        <!-- Amenities -->
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header" id="amenities-heading">
+                                    <h2 class="m-0 text-center">
+                                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#amenities-content" aria-expanded="true" aria-controls="amenities-content">
+                                            Select Amenities <span class="oi oi-chevron-bottom"></span>
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="amenities-content" class="collapse" aria-labelledby="amenities-heading" data-parent="#filter-accordion">
+                                    <div class="card-body select-items">
+                                        <div class="amenities-group">
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="showers" name="amenities[]" value="Showers" {{#if (includes this.amenities "Showers")}}checked{{/if}}>
+                                            <label class="form-check-label" for="showers">Showers</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="lockers" name="amenities[]" value="Lockers" {{#if (includes this.amenities "Lockers")}}checked{{/if}}>
+                                            <label class="form-check-label" for="lockers">Lockers</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="sauna" name="amenities[]" value="Sauna" {{#if (includes this.amenities "Sauna")}}checked{{/if}}>
+                                            <label class="form-check-label" for="sauna">Sauna</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="swimmingPool" name="amenities[]" value="Swimming Pool" {{#if (includes this.amenities "Swimming Pool")}}checked{{/if}}>
+                                            <label class="form-check-label" for="swimmingPool">Swimming Pool</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="wifi" name="amenities[]" value="Free WiFi Access" {{#if (includes this.amenities "Free WiFi Access")}}checked{{/if}}>
+                                            <label class="form-check-label" for="wifi">Free WiFi Access</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="nutritionBar" name="amenities[]" value="Nutrition Bar" {{#if (includes this.amenities "Nutrition Bar")}}checked{{/if}}>
+                                            <label class="form-check-label" for="nutritionBar">Nutrition Bar</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="basketball" name="amenities[]" value="Basketball Court" {{#if (includes this.amenities "Basketball Court")}}checked{{/if}}>
+                                            <label class="form-check-label" for="basketball">Basketball Court</label>
+                                            </div>
+                                            <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="tvScreens" name="amenities[]" value="TV Screens on Equipment" {{#if (includes this.amenities "TV Screens on Equipment")}}checked{{/if}}>
+                                            <label class="form-check-label" for="tvScreens">TV Screens on Equipment</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header" id="region-heading">
+                                    <h2 class="m-0 text-center">
+                                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#region-content" aria-expanded="false" aria-controls="region-content">
+                                            Select Location
+                                            <span class="oi oi-chevron-bottom"></span>
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="region-content" class="collapse" aria-labelledby="region-heading" data-parent="#filter-accordion">
+                                    <div class="card-body select-items">
+                                        <div class="region-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="ncr-east" name="regions" value="ncr-east">
+                                                <label class="form-check-label" for="ncr-east">NCR-East</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="ncr-north" name="regions" value="ncr-north">
+                                                <label class="form-check-label" for="ncr-north">NCR-North</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="ncr-west" name="regions" value="ncr-west">
+                                                <label class="form-check-label" for="ncr-west">NCR-West</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="ncr-south" name="regions" value="ncr-south">
+                                                <label class="form-check-label" for="ncr-south">NCR-South</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="bulacan" name="regions" value="bulacan">
+                                                <label class="form-check-label" for="bulacan">Bulacan</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="cavite" name="regions" value="cavite">
+                                                <label class="form-check-label" for="cavite">Cavite</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="laguna" name="regions" value="laguna">
+                                                <label class="form-check-label" for="laguna">Laguna</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" id="rizal" name="regions" value="rizal">
+                                                <label class="form-check-label" for="rizal">Rizal</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="privacy-policy">
+                                By clicking Establish Gym, you agree on our <a href="" class="privacy-link">Privacy Policy</a>
+                            </label>
+                        </div>
+
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-primary btn-block mt-3" id="registerGymButton">Establish Gym</button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div> --}}
