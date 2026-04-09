@@ -73,10 +73,20 @@ document.addEventListener("DOMContentLoaded", function () {
         createGymForm.addEventListener("submit", async function (event) {
             event.preventDefault();
 
+            const gymName = document.getElementById("registerGymName").value;
+            const gymDesc = document.getElementById("gymProfileDescription").value;
+            const gymAddress = document.getElementById("gymAddress").value;
+
+            // [2.3.1] Input validation: reject gym form fields outside allowed lengths.
+            if (!gymName || gymName.length > 100 || gymDesc.length > 500 || gymAddress.length > 200) {
+                alert("Invalid establishment details. Please check required fields and length limits.");
+                return;
+            }
+
             const formData = new FormData();
-            formData.append("gymName", document.getElementById("registerGymName").value);
-            formData.append("gymDesc", document.getElementById("gymProfileDescription").value);
-            formData.append("address", document.getElementById("gymAddress").value);
+            formData.append("gymName", gymName);
+            formData.append("gymDesc", gymDesc);
+            formData.append("address", gymAddress);
 
             const phoneRegex = /\b\d{3}-\d{3}-\d{4}\b/g;
 
@@ -89,6 +99,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const contactInput = document.getElementById("gymContact");
             let contactNumber = contactInput.value.trim();
+
+            // [2.3.1] Input validation: reject invalid phone input before processing.
+            const isTenDigitPhone = /^\d{10}$/.test(contactNumber);
+            const isDashedPhone = /^\d{3}-\d{3}-\d{4}$/.test(contactNumber);
+            if (contactNumber !== "" && !isTenDigitPhone && !isDashedPhone) {
+                alert("Invalid phone number. Please use 10 digits or ddd-ddd-dddd format.");
+                return;
+            }
+
             contactNumber = formatPhoneNumber(contactNumber);
 
             if (contactNumber.match(phoneRegex)) {

@@ -8,6 +8,9 @@ const Review = require("../models/Review");
 const Comment = require("../models/Comment"); // need to load the comments
 const { v4: uuidv4 } = require("uuid"); // Import uuid for unique filenames
 
+const MAX_REVIEW_SEARCH_LENGTH = 500;
+const UNSAFE_REGEX_PATTERN = /[.*+?^${}()|[\]\\]/;
+
 // Multer Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -92,6 +95,11 @@ router.get("/:id/results", async (req, res) => {
     if (!establishment) return res.status(404).json({ message: "Establishment not found" });
 
     const searchString = req.query.reviewSearch || '';
+
+    // [2.3.1] Input validation: reject invalid or unsafe review search input.
+    if (typeof searchString !== "string" || searchString.length > MAX_REVIEW_SEARCH_LENGTH || UNSAFE_REGEX_PATTERN.test(searchString)) {
+      return res.status(400).json({ message: "Invalid review search input." });
+    }
 
     const queryFilter = {
       ...(searchString != '' && { reviewText : { $regex : searchString, $options : 'i' } }),

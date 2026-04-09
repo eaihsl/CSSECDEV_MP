@@ -18,6 +18,35 @@ dotenv.config();
 const sourceEmail = process.env.SOURCE_EMAIL;
 const sourceEmailPassword = process.env.SOURCE_PASSWORD;
 
+const MAX_SEARCH_IDENTITY_LENGTH = 254;
+const MAX_USERNAME_LENGTH = 100;
+const MAX_SHORT_DESCRIPTION_LENGTH = 500;
+const MAX_SECURITY_QUESTION_LENGTH = 200;
+const MAX_SECURITY_ANSWER_LENGTH = 200;
+const MAX_GYM_NAME_LENGTH = 100;
+const MAX_GYM_DESC_LENGTH = 500;
+const MAX_GYM_ADDRESS_LENGTH = 200;
+const PHONE_NUMBER_PATTERN = /^\+63 \d{3}-\d{3}-\d{4}$/;
+const ALLOWED_AMENITIES = [
+  "Showers",
+  "Parking",
+  "Swimming Pool",
+  "Lockers",
+  "Sauna",
+  "Spa Services",
+  "Free WiFi Access",
+  "Nutrition Bar",
+  "Basketball Court",
+  "TV Screens on Equipment"
+];
+const ALLOWED_LOCATIONS = [
+  "NCR",
+  "Cavite",
+  "Laguna",
+  "Rizal",
+  "Bulacan"
+];
+
 function logInputValidationFailure(req, message, metadata = {}) {
   logSecurityEvent({
     eventType: "INPUT_VALIDATION",
@@ -263,6 +292,24 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "Username, email, and password are required." });
     }
 
+    // [2.3.1] Input validation: reject registration fields that exceed allowed lengths.
+    if (
+      username.length > MAX_USERNAME_LENGTH ||
+      email.length > MAX_SEARCH_IDENTITY_LENGTH ||
+      shortDescription.length > MAX_SHORT_DESCRIPTION_LENGTH ||
+      (typeof securityQuestion === "string" && securityQuestion.length > MAX_SECURITY_QUESTION_LENGTH) ||
+      (typeof securityAnswer === "string" && securityAnswer.length > MAX_SECURITY_ANSWER_LENGTH)
+    ) {
+      logInputValidationFailure(req, "Registration rejected: one or more fields exceed maximum length.", {
+        usernameLength: username.length,
+        emailLength: email.length,
+        shortDescriptionLength: shortDescription.length,
+        securityQuestionLength: typeof securityQuestion === "string" ? securityQuestion.length : null,
+        securityAnswerLength: typeof securityAnswer === "string" ? securityAnswer.length : null
+      });
+      return res.status(400).json({ message: "One or more fields exceed the allowed length." });
+    }
+
     if (password !== confirmPassword) {
       logSecurityEvent({
         eventType: "AUTH_REGISTER",
@@ -439,6 +486,14 @@ router.get("/resetPassword/question", async (req, res) => {
       return res.status(400).json({ question: null, message: "Username or email is required." });
     }
 
+    // [2.3.1] Input validation: reject overlong reset username/email identifiers.
+    if (normalizedUsername.length > MAX_SEARCH_IDENTITY_LENGTH) {
+      logInputValidationFailure(req, "Password reset question request rejected: identifier exceeds allowed length.", {
+        length: normalizedUsername.length
+      });
+      return res.status(400).json({ question: null, message: "Username or email exceeds allowed length." });
+    }
+
     let user = await User.findOne({ username: normalizedUsername });
     if (!user) { user = await User.findOne({ email: normalizedUsername }); }
 
@@ -480,6 +535,22 @@ router.get("/resetPassword/question", async (req, res) => {
 router.post("/resetPassword", async (req, res) => {
   try {
     const { username, securityAnswer, newPassword, confirmPassword } = req.body;
+
+    // [2.3.1] Input validation: reject invalid reset payload types and overlong values.
+    if (
+      typeof username !== "string" ||
+      typeof securityAnswer !== "string" ||
+      typeof newPassword !== "string" ||
+      typeof confirmPassword !== "string" ||
+      username.length > MAX_SEARCH_IDENTITY_LENGTH ||
+      securityAnswer.length > MAX_SECURITY_ANSWER_LENGTH
+    ) {
+      logInputValidationFailure(req, "Password reset rejected: payload types/lengths are invalid.", {
+        usernameLength: typeof username === "string" ? username.length : null,
+        securityAnswerLength: typeof securityAnswer === "string" ? securityAnswer.length : null
+      });
+      return res.status(400).json({ message: "Invalid password reset payload." });
+    }
 
     let user = await User.findOne({ username });
     if (!user) { user = await User.findOne({ email: username }); }
@@ -579,6 +650,15 @@ router.post("/login", async (req, res) => {
       });
 
       return res.status(400).json({ message: "Username and password are required." });
+    }
+
+    // [2.3.1] Input validation: reject overlong login identifiers.
+    if (normalizedUsername.length > MAX_SEARCH_IDENTITY_LENGTH || normalizedPassword.length > MAX_SECURITY_ANSWER_LENGTH) {
+      logInputValidationFailure(req, "Login rejected: username or password exceeds allowed length.", {
+        usernameLength: normalizedUsername.length,
+        passwordLength: normalizedPassword.length
+      });
+      return res.status(400).json({ message: "Username or password exceeds allowed length." });
     }
 
     // Find user without requiring a role
@@ -973,6 +1053,41 @@ router.post("/createGym", isAuthenticated, requireBusinessRole, async (req, res)
 
     const { gymName, gymDesc, address, contactNumber, regions, amenities, profilePicture } = req.body;
 
+    // [2.3.1] Input validation: reject invalid gym payload types and lengths.
+    if (
+      typeof gymName !== "string" ||
+      gymName.trim().length < 1 ||
+      gymName.length > MAX_GYM_NAME_LENGTH ||
+      (gymDesc != null && (typeof gymDesc !== "string" || gymDesc.length > MAX_GYM_DESC_LENGTH)) ||
+      (address != null && (typeof address !== "string" || address.length > MAX_GYM_ADDRESS_LENGTH))
+    ) {
+      logInputValidationFailure(req, "Create gym rejected: invalid gym field type/length.", {
+        gymNameLength: typeof gymName === "string" ? gymName.length : null,
+        gymDescLength: typeof gymDesc === "string" ? gymDesc.length : null,
+        addressLength: typeof address === "string" ? address.length : null
+      });
+      return res.status(400).json({ message: "Invalid gym input values." });
+    }
+
+    // [2.3.1] Input validation: reject invalid contact number format.
+    if (contactNumber && (typeof contactNumber !== "string" || !PHONE_NUMBER_PATTERN.test(contactNumber))) {
+      logInputValidationFailure(req, "Create gym rejected: invalid contact number format.", {
+        contactNumber
+      });
+      return res.status(400).json({ message: "Invalid contact number format." });
+    }
+
+    const amenitiesList = Array.isArray(amenities) ? amenities : amenities ? [amenities] : [];
+
+    // [2.3.1] Input validation: reject invalid region and amenities values.
+    if ((regions && !ALLOWED_LOCATIONS.includes(regions)) || !amenitiesList.every((amenity) => ALLOWED_AMENITIES.includes(amenity))) {
+      logInputValidationFailure(req, "Create gym rejected: invalid region or amenities selection.", {
+        region: regions,
+        amenities: amenitiesList
+      });
+      return res.status(400).json({ message: "Invalid region or amenities value." });
+    }
+
     const existingEstablishment = await Establishment.findOne({ name: gymName, owner: req.session.user._id });
     if (existingEstablishment) {
       logInputValidationFailure(req, "Create gym rejected: duplicate establishment name for owner.", { gymName, ownerId: req.session.user._id });
@@ -1268,6 +1383,46 @@ router.post("/createGymWithImage", isAuthenticated, requireBusinessRole, gymUplo
       regions,
       amenities
     } = req.body;
+
+    // [2.3.1] Input validation: reject invalid gym-with-image payload types and lengths.
+    if (
+      typeof gymName !== "string" ||
+      gymName.trim().length < 1 ||
+      gymName.length > MAX_GYM_NAME_LENGTH ||
+      (gymDesc != null && (typeof gymDesc !== "string" || gymDesc.length > MAX_GYM_DESC_LENGTH)) ||
+      (address != null && (typeof address !== "string" || address.length > MAX_GYM_ADDRESS_LENGTH))
+    ) {
+      logInputValidationFailure(req, "Create gym with image rejected: invalid gym field type/length.", {
+        gymNameLength: typeof gymName === "string" ? gymName.length : null,
+        gymDescLength: typeof gymDesc === "string" ? gymDesc.length : null,
+        addressLength: typeof address === "string" ? address.length : null
+      });
+      return res.status(400).json({ message: "Invalid gym input values." });
+    }
+
+    // [2.3.1] Input validation: reject invalid contact number format.
+    if (contactNumber && (typeof contactNumber !== "string" || !PHONE_NUMBER_PATTERN.test(contactNumber))) {
+      logInputValidationFailure(req, "Create gym with image rejected: invalid contact number format.", {
+        contactNumber
+      });
+      return res.status(400).json({ message: "Invalid contact number format." });
+    }
+
+    const normalizedAmenities = amenities ?? req.body["amenities[]"];
+    const amenitiesList = Array.isArray(normalizedAmenities)
+      ? normalizedAmenities
+      : normalizedAmenities
+        ? [normalizedAmenities]
+        : [];
+
+    // [2.3.1] Input validation: reject invalid region and amenities values.
+    if ((regions && !ALLOWED_LOCATIONS.includes(regions)) || !amenitiesList.every((amenity) => ALLOWED_AMENITIES.includes(amenity))) {
+      logInputValidationFailure(req, "Create gym with image rejected: invalid region or amenities selection.", {
+        region: regions,
+        amenities: amenitiesList
+      });
+      return res.status(400).json({ message: "Invalid region or amenities value." });
+    }
 
     // let amenities = req.body["amenities[]"] || [];
     // if (!Array.isArray(amenities)) {

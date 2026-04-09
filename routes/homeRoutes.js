@@ -3,6 +3,28 @@ const router = express.Router();
 const Establishment = require("../models/Establishment");
 const Review = require("../models/Review");
 
+const MAX_SEARCH_LENGTH = 500;
+const ALLOWED_AMENITIES = [
+    "Showers",
+    "Parking",
+    "Swimming Pool",
+    "Lockers",
+    "Sauna",
+    "Spa Services",
+    "Free WiFi Access",
+    "Nutrition Bar",
+    "Basketball Court",
+    "TV Screens on Equipment"
+];
+const ALLOWED_LOCATIONS = [
+    "NCR",
+    "Cavite",
+    "Laguna",
+    "Rizal",
+    "Bulacan"
+];
+const UNSAFE_REGEX_PATTERN = /[.*+?^${}()|[\]\\]/;
+
 // Get all establishments
 router.get("/", async (req, res, next) => {
     try {
@@ -37,6 +59,31 @@ router.get("/results", async (req, res, next) => {
     const selectedLocations = Array.isArray(req.query.regions) ? req.query.regions : req.query.regions ? [req.query.regions] : [];
     const selectedRatings = Array.isArray(req.query.ratings) ? req.query.ratings.map(Number) : req.query.ratings ? [Number(req.query.ratings)] : [];
     const sortBy = Number(req.query.sortby) || 1;
+
+    // [2.3.1] Input validation: reject invalid or unsafe search name input.
+    if (typeof searchName !== "string" || searchName.length > MAX_SEARCH_LENGTH || UNSAFE_REGEX_PATTERN.test(searchName)) {
+        return res.status(400).json({ message: "Invalid name search input." });
+    }
+
+    // [2.3.1] Input validation: reject invalid or unsafe search description input.
+    if (typeof searchDesc !== "string" || searchDesc.length > MAX_SEARCH_LENGTH || UNSAFE_REGEX_PATTERN.test(searchDesc)) {
+        return res.status(400).json({ message: "Invalid description search input." });
+    }
+
+    // [2.3.1] Input validation: reject unknown amenity filter values.
+    if (!selectedAmenities.every((amenity) => typeof amenity === "string" && ALLOWED_AMENITIES.includes(amenity))) {
+        return res.status(400).json({ message: "Invalid amenities filter value." });
+    }
+
+    // [2.3.1] Input validation: reject unknown location filter values.
+    if (!selectedLocations.every((location) => typeof location === "string" && ALLOWED_LOCATIONS.includes(location))) {
+        return res.status(400).json({ message: "Invalid locations filter value." });
+    }
+
+    // [2.3.1] Input validation: reject invalid rating filter values.
+    if (!selectedRatings.every((rating) => Number.isInteger(rating) && rating >= 1 && rating <= 5)) {
+        return res.status(400).json({ message: "Invalid ratings filter value." });
+    }
 
     try {
         const searchFilter = {

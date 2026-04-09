@@ -14,6 +14,9 @@ const { isAuthenticated, preventSelfReviewVote } = require("../middlewares/authM
 const dotenv = require("dotenv");
 dotenv.config();
 
+const MAX_REVIEW_TEXT_LENGTH = 5000;
+const ALLOWED_VOTE_TYPES = ["like", "dislike", "remove"];
+
 async function hasTransactionSupport() {
   if (mongoose.connection.readyState !== 1) {
     return false;
@@ -57,6 +60,43 @@ router.post("/:establishmentId/create", ensureLoggedIn, isAuthenticated, uploadR
   try {
     const { reviewText, rating } = req.body;
     const { establishmentId } = req.params;
+
+    // [2.3.1] Input validation: reject invalid review text type/length.
+    if (typeof reviewText !== "string") {
+      logSecurityEvent({
+        eventType: "INPUT_VALIDATION",
+        outcome: "FAILURE",
+        message: "Review creation rejected: review text must be a string.",
+        req,
+        metadata: { establishmentId }
+      });
+      return res.status(400).json({ message: "Review text must be a string." });
+    }
+
+    const trimmedReviewText = reviewText.trim();
+    if (!trimmedReviewText || trimmedReviewText.length > MAX_REVIEW_TEXT_LENGTH) {
+      logSecurityEvent({
+        eventType: "INPUT_VALIDATION",
+        outcome: "FAILURE",
+        message: "Review creation rejected: review text length is invalid.",
+        req,
+        metadata: { establishmentId, length: trimmedReviewText.length }
+      });
+      return res.status(400).json({ message: "Review text must be between 1 and 5000 characters." });
+    }
+
+    // [2.3.1] Input validation: reject rating values outside the allowed range.
+    const parsedRating = Number(rating);
+    if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      logSecurityEvent({
+        eventType: "INPUT_VALIDATION",
+        outcome: "FAILURE",
+        message: "Review creation rejected: rating is out of range.",
+        req,
+        metadata: { establishmentId, rating }
+      });
+      return res.status(400).json({ message: "Rating must be an integer from 1 to 5." });
+    }
 
     // Handle file uploads
     const reviewImages = req.files;  // This will hold the uploaded image files
@@ -172,6 +212,43 @@ router.put("/:reviewId/edit", ensureLoggedIn, isAuthenticated, async (req, res) 
     const { reviewText, rating } = req.body;
     const { reviewId } = req.params;
 
+    // [2.3.1] Input validation: reject invalid review text type/length on edit.
+    if (typeof reviewText !== "string") {
+      logSecurityEvent({
+        eventType: "INPUT_VALIDATION",
+        outcome: "FAILURE",
+        message: "Review edit rejected: review text must be a string.",
+        req,
+        metadata: { reviewId }
+      });
+      return res.status(400).json({ message: "Review text must be a string." });
+    }
+
+    const trimmedReviewText = reviewText.trim();
+    if (!trimmedReviewText || trimmedReviewText.length > MAX_REVIEW_TEXT_LENGTH) {
+      logSecurityEvent({
+        eventType: "INPUT_VALIDATION",
+        outcome: "FAILURE",
+        message: "Review edit rejected: review text length is invalid.",
+        req,
+        metadata: { reviewId, length: trimmedReviewText.length }
+      });
+      return res.status(400).json({ message: "Review text must be between 1 and 5000 characters." });
+    }
+
+    // [2.3.1] Input validation: reject rating values outside the allowed range on edit.
+    const parsedRating = Number(rating);
+    if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      logSecurityEvent({
+        eventType: "INPUT_VALIDATION",
+        outcome: "FAILURE",
+        message: "Review edit rejected: rating is out of range.",
+        req,
+        metadata: { reviewId, rating }
+      });
+      return res.status(400).json({ message: "Rating must be an integer from 1 to 5." });
+    }
+
     const review = await Review.findById(reviewId);
     if (!review) return res.status(404).json({ message: "Review not found" });
 
@@ -263,6 +340,18 @@ router.post("/:reviewId/vote", ensureLoggedIn, isAuthenticated, preventSelfRevie
   const { reviewId } = req.params;
   const { type } = req.body;
   const userId = req.session.user._id;
+
+  // [2.3.1] Input validation: reject unsupported vote types.
+  if (!ALLOWED_VOTE_TYPES.includes(type)) {
+    logSecurityEvent({
+      eventType: "INPUT_VALIDATION",
+      outcome: "FAILURE",
+      message: "Review vote rejected: invalid vote type.",
+      req,
+      metadata: { reviewId, type }
+    });
+    return res.status(400).json({ message: "Vote type must be one of: like, dislike, remove." });
+  }
 
   const review = await Review.findById(reviewId);
   if (!review) return res.status(404).json({ message: "Review not found." });

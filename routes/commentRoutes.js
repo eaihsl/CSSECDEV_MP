@@ -29,6 +29,30 @@ router.post('/:reviewId/create', ensureLoggedIn, isAuthenticated, async (req, re
   const { commentText } = req.body;
 
   try {
+    // [2.3.1] Input validation: reject non-string, empty, and overlong comments.
+    if (typeof commentText !== "string") {
+      logSecurityEvent({
+        eventType: "INPUT_VALIDATION",
+        outcome: "FAILURE",
+        message: "Comment creation rejected: comment text must be a string.",
+        req,
+        metadata: { reviewId }
+      });
+      return res.status(400).json({ message: "Comment text must be a string." });
+    }
+
+    const trimmedCommentText = commentText.trim();
+    if (!trimmedCommentText || trimmedCommentText.length > 2000) {
+      logSecurityEvent({
+        eventType: "INPUT_VALIDATION",
+        outcome: "FAILURE",
+        message: "Comment creation rejected: comment text length is invalid.",
+        req,
+        metadata: { reviewId, length: trimmedCommentText.length }
+      });
+      return res.status(400).json({ message: "Comment text must be between 1 and 2000 characters." });
+    }
+
     const comment = new Comment({
       reviewId,
       userId: req.session.user._id,
