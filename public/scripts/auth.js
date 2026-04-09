@@ -48,7 +48,9 @@ document.addEventListener("DOMContentLoaded", function () {
             "registerPassword",
             "registerConfirmPassword",
             "profileDescription",
-            "accountType"
+            "accountType",
+            "securityQuestion",
+            "securityAnswer"
         ];
 
         fieldsToReset.forEach(id => {
@@ -123,9 +125,16 @@ document.addEventListener("DOMContentLoaded", function () {
             const confirmPassword = document.getElementById("registerConfirmPassword").value.trim();
             const shortDescription = document.getElementById("profileDescription").value.trim() || "";
             const role = document.getElementById("accountType").value;
+            const securityQuestion = document.getElementById("securityQuestion").value.trim();
+            const securityAnswer = document.getElementById("securityAnswer").value.trim();
 
             if (!username || !email || !password || !confirmPassword) {
                 alert("Please fill in all required fields.");
+                return;
+            }
+
+            if (!securityQuestion || !securityAnswer) {
+                alert("Please provide a security question and answer.");
                 return;
             }
 
@@ -176,7 +185,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const response = await fetch("/users/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, email, password, shortDescription, role, tempFilename })
+                    body: JSON.stringify({ username, email, password, shortDescription, role, tempFilename, securityQuestion, securityAnswer })
                 });
 
                 const data = await response.json();
@@ -244,6 +253,83 @@ document.addEventListener("DOMContentLoaded", function () {
             } catch (error) {
                 console.error("Error logging in:", error);
                 alert("Error logging in. Please try again.");
+            }
+        });
+    }
+
+    // ── Forgot Password: Step 1 — fetch security question ────────────────────
+    const fetchQuestionButton = document.getElementById("fetchQuestionButton");
+    if (fetchQuestionButton) {
+        fetchQuestionButton.addEventListener("click", async function () {
+            const username = document.getElementById("resetUsername").value.trim();
+            if (!username) {
+                alert("Please enter your username or email.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/users/resetPassword/question?username=${encodeURIComponent(username)}`);
+                const data = await response.json();
+
+                if (!data.question) {
+                    alert("No security question found for that account.");
+                    return;
+                }
+
+                // Show step 2 and populate the question label
+                document.getElementById("resetQuestionLabel").textContent = data.question;
+                document.getElementById("resetStep1").style.display = "none";
+                document.getElementById("resetStep2").style.display = "block";
+            } catch (error) {
+                console.error("Error fetching security question:", error);
+                alert("Something went wrong. Please try again.");
+            }
+        });
+    }
+
+    // ── Forgot Password: Step 2 — submit answer and new password ─────────────
+    const resetPasswordButton = document.getElementById("resetPasswordButton");
+    if (resetPasswordButton) {
+        resetPasswordButton.addEventListener("click", async function () {
+            const username = document.getElementById("resetUsername").value.trim();
+            const securityAnswer = document.getElementById("resetAnswer").value.trim();
+            const newPassword = document.getElementById("resetNewPassword").value.trim();
+            const confirmPassword = document.getElementById("resetConfirmPassword").value.trim();
+
+            if (!securityAnswer || !newPassword || !confirmPassword) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert("Passwords do not match.");
+                return;
+            }
+
+            try {
+                const response = await fetch("/users/resetPassword", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, securityAnswer, newPassword })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert("Password reset successfully! Please log in with your new password.");
+                    // Close modal and reset its state
+                    $("#forgotPasswordModal").modal("hide");
+                    document.getElementById("resetUsername").value = "";
+                    document.getElementById("resetAnswer").value = "";
+                    document.getElementById("resetNewPassword").value = "";
+                    document.getElementById("resetConfirmPassword").value = "";
+                    document.getElementById("resetStep1").style.display = "block";
+                    document.getElementById("resetStep2").style.display = "none";
+                } else {
+                    alert("Error: " + (data.message || "Unknown error"));
+                }
+            } catch (error) {
+                console.error("Error resetting password:", error);
+                alert("Something went wrong. Please try again.");
             }
         });
     }

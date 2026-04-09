@@ -203,7 +203,7 @@ router.post("/uploadTempProfilePicture", upload.single("profilePicture"), (req, 
 // Register a new user
 router.post("/register", async (req, res) => {
   try {
-    const { username, email, password, shortDescription = "", role, tempFilename } = req.body;
+    const { username, email, password, shortDescription = "", role, tempFilename, securityQuestion, securityAnswer } = req.body;
 
     if (!["people", "business"].includes(role)) {
       return res.status(400).json({ message: "Invalid role selected." });
@@ -213,6 +213,25 @@ router.post("/register", async (req, res) => {
     const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
     if (!passwordRegex.test(password)) {
       return res.status(400).json({ message: "Password must be at least 8 characters long, contain at least one uppercase letter, and one number." });
+    }
+
+    // 2.1.9 - Security question validation
+    // Reject questions with very common/predictable answers
+    const rejectedQuestions = [
+      "what is your favorite color",
+      "what is your pet's name",
+      "what is your mother's maiden name",
+      "what is your birthday",
+      "what is your favorite food"
+    ];
+    if (!securityQuestion || !securityAnswer) {
+      return res.status(400).json({ message: "A security question and answer are required." });
+    }
+    if (rejectedQuestions.includes(securityQuestion.trim().toLowerCase())) {
+      return res.status(400).json({ message: "That security question is too common. Please choose a more specific question." });
+    }
+    if (securityAnswer.trim().length < 3) {
+      return res.status(400).json({ message: "Security answer must be at least 3 characters long." });
     }
 
     const existingUser = await User.findOne({ username });
@@ -231,6 +250,9 @@ router.post("/register", async (req, res) => {
     // const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
     // console.log("Hashed password being saved:", hashedPassword);
 
+    // 2.1.9 - Hash the security answer before storing (treat it like a password)
+    const hashedAnswer = await bcrypt.hash(securityAnswer.trim().toLowerCase(), 12);
+
     // Create the user AFTER assigning the correct profile picture filename
     const newUser = new User({
       username,
@@ -238,7 +260,9 @@ router.post("/register", async (req, res) => {
       password,
       role,
       shortDescription,
-      profilePicture: profilePictureFilename // Assign the correct profile picture
+      profilePicture: profilePictureFilename, // Assign the correct profile picture
+      securityQuestion: securityQuestion.trim(),
+      securityAnswer: hashedAnswer
     });
 
     await newUser.save();
@@ -254,6 +278,61 @@ router.post("/register", async (req, res) => {
 
   } catch (err) {
     console.error("Registration Error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// 2.1.9 - Get security question for a given username (used on the reset page before answer is submitted)
+router.get("/resetPassword/question", async (req, res) => {
+  try {
+    const { username } = req.query;
+
+    let user = await User.findOne({ username });
+    if (!user) { user = await User.findOne({ email: username }); }
+
+    // Return the same response whether the user exists or not to avoid user enumeration
+    if (!user || !user.securityQuestion) {
+      return res.status(200).json({ question: null, message: "No security question found for that account." });
+    }
+
+    res.json({ question: user.securityQuestion });
+  } catch (err) {
+    console.error("Reset question fetch error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// 2.1.9 - Verify security answer and reset password
+router.post("/resetPassword", async (req, res) => {
+  try {
+    const { username, securityAnswer, newPassword } = req.body;
+
+    let user = await User.findOne({ username });
+    if (!user) { user = await User.findOne({ email: username }); }
+
+    // Generic message to avoid user enumeration
+    if (!user || !user.securityAnswer) {
+      return res.status(401).json({ message: "Incorrect username or security answer." });
+    }
+
+    const answerMatch = await bcrypt.compare(securityAnswer.trim().toLowerCase(), user.securityAnswer);
+    if (!answerMatch) {
+      return res.status(401).json({ message: "Incorrect username or security answer." });
+    }
+
+    // Enforce same password rules as registration
+    const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({ message: "Password must be at least 8 characters long, contain at least one uppercase letter, and one number." });
+    }
+
+    // Hash and save via the model's pre-save hook (12 rounds, consistent with registration)
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: "Password reset successfully." });
+  } catch (err) {
+    console.error("Password reset error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
@@ -275,10 +354,32 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Incorrect username or password." });
     }
 
+    // 2.1.8 - Check if account is currently locked
+    const MAX_LOGIN_ATTEMPTS = 5;
+    const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
+      return res.status(403).json({ message: `Account is temporarily locked. Please try again in ${minutesLeft} minute(s).` });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password); // Compare hashed password
     if (!isMatch) {
+      // 2.1.8 - Increment failed attempts and lock if threshold reached
+      const newAttempts = (user.loginAttempts || 0) + 1;
+      if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+        await User.findByIdAndUpdate(user._id, {
+          loginAttempts: newAttempts,
+          lockUntil: new Date(Date.now() + LOCKOUT_DURATION_MS)
+        });
+        return res.status(403).json({ message: "Too many failed login attempts. Account locked for 15 minutes." });
+      }
+      await User.findByIdAndUpdate(user._id, { loginAttempts: newAttempts });
       return res.status(401).json({ message: "Incorrect username or password." });
     }
+
+    // 2.1.8 - Reset lockout fields on successful login
+    await User.findByIdAndUpdate(user._id, { loginAttempts: 0, lockUntil: null });
 
     req.session.user = {
       _id: user._id.toString(),
@@ -333,7 +434,15 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
     const { shortDescription, password, resetProfilePicture } = req.body;
 
     if (shortDescription) updates.shortDescription = shortDescription;
-    if (password) updates.password = await bcrypt.hash(password, 10);
+
+    if (password) {
+      // 2.1.5 / 2.1.6 - Enforce same complexity and length requirements as registration
+      const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
+      if (!passwordRegex.test(password)) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long, contain at least one uppercase letter, and one number." });
+      }
+      updates.password = await bcrypt.hash(password, 12);
+    }
 
     if (req.file) {
       if (user.profilePicture !== 'default_avatar.jpg') {

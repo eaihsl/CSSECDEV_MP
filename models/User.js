@@ -9,6 +9,12 @@ const userSchema = new mongoose.Schema({
   profilePicture: { type: String },
   shortDescription: { type: String },
   subscribers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  // 2.1.8 - Account lockout fields
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil: { type: Date, default: null },
+  // 2.1.9 - Security question fields
+  securityQuestion: { type: String, default: "Who is your favorite professor?" },
+  securityAnswer: { type: String, default: "kerwin"},
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

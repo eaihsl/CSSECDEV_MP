@@ -43,6 +43,9 @@
                             </label>
                         </div>
                         <button type="submit" class="btn btn-block btn-primary login-btn mt-3" id="loginButton">Log In</button>
+                        <p class="text-center mt-2">
+                            <a href="#" data-dismiss="modal" data-toggle="modal" data-target="#forgotPasswordModal">Forgot Password?</a>
+                        </p>
                     </form>
                 </div>
             </div>
@@ -105,17 +108,74 @@
                                 </div>
                             </div>
                         </div>  
-                        <div class="row">  
-                            <div class="col-md-12">  
+                        <!-- Security Question Fields -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="securityQuestion">Security Question:</label>
+                                    <input type="text" class="form-control" id="securityQuestion" placeholder="e.g. What was the name of your first school?">
+                                    <small class="form-text text-muted">Choose a question with a unique answer only you would know.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="securityAnswer">Security Answer:</label>
+                                    <input type="text" class="form-control" id="securityAnswer" placeholder="Your answer">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
                                 <label class="privacy-policy">
                                     By clicking Submit, you agree on our <a href="" class="privacy-link">Privacy Policy</a>
                                 </label>
                             </div>
-                            <div class="col-md-12">  
+                            <div class="col-md-12">
                                 <button type="submit" class="btn btn-primary btn-block mt-3" id="registerButton">Register</button>
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="forgotPasswordModalLabel">Reset Password</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Step 1: Enter username to fetch security question -->
+                    <div id="resetStep1">
+                        <div class="form-group">
+                            <label for="resetUsername">Username or Email:</label>
+                            <input type="text" class="form-control" id="resetUsername" placeholder="Enter your username or email">
+                        </div>
+                        <button class="btn btn-primary btn-block" id="fetchQuestionButton">Find My Account</button>
+                    </div>
+                    <!-- Step 2: Answer and new password (hidden until Step 1 succeeds) -->
+                    <div id="resetStep2" style="display: none;">
+                        <div class="form-group">
+                            <label id="resetQuestionLabel" class="font-weight-bold"></label>
+                        </div>
+                        <div class="form-group">
+                            <label for="resetAnswer">Your Answer:</label>
+                            <input type="text" class="form-control" id="resetAnswer" placeholder="Enter your answer">
+                        </div>
+                        <div class="form-group">
+                            <label for="resetNewPassword">New Password:</label>
+                            <input type="password" class="form-control" id="resetNewPassword" placeholder="Enter new password">
+                        </div>
+                        <div class="form-group">
+                            <label for="resetConfirmPassword">Confirm New Password:</label>
+                            <input type="password" class="form-control" id="resetConfirmPassword" placeholder="Confirm new password">
+                        </div>
+                        <button class="btn btn-primary btn-block" id="resetPasswordButton">Reset Password</button>
+                    </div>
                 </div>
             </div>
         </div>
