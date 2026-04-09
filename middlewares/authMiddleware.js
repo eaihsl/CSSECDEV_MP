@@ -10,6 +10,8 @@ const isAuthenticated = (req, res, next) => {
       message: "Authenticated access granted.",
       req
     });
+    // [2.2.2] Fail-secure: exit immediately after authorization decision.
+    return next();
     next();
   } else {
     logSecurityEvent({
@@ -32,6 +34,8 @@ const isAdmin = (req, res, next) => {
       req,
       metadata: { requiredRole: "admin" }
     });
+    // [2.2.2] Fail-secure: exit immediately after authorization decision.
+    return next();
     next();
   } else {
     logSecurityEvent({

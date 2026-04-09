@@ -149,6 +149,22 @@ router.put("/:reviewId/edit", ensureLoggedIn, isAuthenticated, async (req, res) 
     const review = await Review.findById(reviewId);
     if (!review) return res.status(404).json({ message: "Review not found" });
 
+    // [2.2.2] Fail-secure: ownership verification required for protected resource operations.
+    if (review.userId.toString() !== req.session.user._id.toString()) {
+      logSecurityEvent({
+        eventType: "ACCESS_CONTROL_REVIEW_ACTION",
+        outcome: "FAILURE",
+        message: "Review edit blocked: user is not the owner.",
+        req,
+        metadata: {
+          reviewId,
+          ownerUserId: review.userId.toString(),
+          actorUserId: req.session.user._id
+        }
+      });
+      return res.status(403).json({ message: "Forbidden. You can only edit your own reviews." });
+    }
+
     review.reviewText = reviewText;
     review.rating = parseInt(rating);
     review.edited = true;
@@ -171,6 +187,22 @@ router.delete("/:reviewId", ensureLoggedIn, isAuthenticated, async (req, res) =>
 
     const review = await Review.findById(reviewId);
     if (!review) return res.status(404).json({ message: "Review not found" });
+
+    // [2.2.2] Fail-secure: ownership verification required for protected resource operations.
+    if (review.userId.toString() !== req.session.user._id.toString()) {
+      logSecurityEvent({
+        eventType: "ACCESS_CONTROL_REVIEW_ACTION",
+        outcome: "FAILURE",
+        message: "Review delete blocked: user is not the owner.",
+        req,
+        metadata: {
+          reviewId,
+          ownerUserId: review.userId.toString(),
+          actorUserId: req.session.user._id
+        }
+      });
+      return res.status(403).json({ message: "Forbidden. You can only delete your own reviews." });
+    }
 
     review.images.forEach((img) => {
       const filePath = path.join('public/review_pictures', img);

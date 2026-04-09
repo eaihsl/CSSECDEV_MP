@@ -1165,6 +1165,22 @@ router.delete("/deleteGym/:gymId", isAuthenticated, requireBusinessRole, async (
       return res.status(401).json({ message: "Invalid username or password." });
     }
 
+    // [2.2.2] Fail-secure: verify ownership before destructive deletion operations.
+    const establishment = await Establishment.findById(gymId).select("owner");
+    if (!establishment) {
+      return res.status(404).json({ message: "Gym not found." });
+    }
+
+    // [2.2.2] Fail-secure: deny by default when authenticated user is not the owner.
+    if (establishment.owner.toString() !== req.session.user._id.toString()) {
+      logAccessControlFailure(req, "Delete gym blocked: user is not the owner.", {
+        gymId,
+        ownerUserId: establishment.owner.toString(),
+        actorUserId: req.session.user._id
+      });
+      return res.status(403).json({ message: "Forbidden. You can only delete your own gyms." });
+    }
+
     const gymReviews = await Review.find({ establishmentId: gymId });
     for (const review of gymReviews) {
       review.images.forEach((img) => {
