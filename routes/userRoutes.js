@@ -310,6 +310,15 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "One or more fields exceed the allowed length." });
     }
 
+    // [2.3.3] Data length validation: reject invalid email address format.
+    const emailFormatPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailFormatPattern.test(email)) {
+      logInputValidationFailure(req, "Registration rejected: invalid email format.", {
+        email
+      });
+      return res.status(400).json({ message: "Please provide a valid email address." });
+    }
+
     if (password !== confirmPassword) {
       logSecurityEvent({
         eventType: "AUTH_REGISTER",
@@ -684,6 +693,16 @@ router.post("/login", async (req, res) => {
     const MAX_LOGIN_ATTEMPTS = 5;
     const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
+    // [2.3.3] Data length validation: release account when lockout duration has expired.
+    if (user.lockUntil && user.lockUntil <= Date.now()) {
+      await User.findByIdAndUpdate(user._id, {
+        loginAttempts: 0,
+        lockUntil: null
+      });
+      user.loginAttempts = 0;
+      user.lockUntil = null;
+    }
+
     if (user.lockUntil && user.lockUntil > Date.now()) {
       const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
       logSecurityEvent({
@@ -732,6 +751,7 @@ router.post("/login", async (req, res) => {
     }
 
     // 2.1.8 - Reset lockout fields on successful login
+    // [2.3.3] Data length validation: keep login attempt counter bounded by resetting on success.
     // 2.1.12 - Capture last login info BEFORE overwriting it, then update
     const lastLoginAt = user.lastLoginAt || null;
     const lastLoginAttemptAt = user.lastLoginAttemptAt || null;
@@ -848,6 +868,15 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
     
     const updates = {};
     const { shortDescription, password, currentPassword, resetProfilePicture } = req.body;
+
+    // [2.3.3] Data length validation: short description must not exceed maximum length.
+    if (shortDescription && shortDescription.length > MAX_SHORT_DESCRIPTION_LENGTH) {
+      logInputValidationFailure(req, "Profile update rejected: short description exceeds maximum length.", {
+        userId,
+        shortDescriptionLength: shortDescription.length
+      });
+      return res.status(400).json({ message: `Short description must not exceed ${MAX_SHORT_DESCRIPTION_LENGTH} characters.` });
+    }
 
     if (shortDescription) updates.shortDescription = shortDescription;
 

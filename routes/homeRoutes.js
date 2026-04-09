@@ -4,6 +4,7 @@ const Establishment = require("../models/Establishment");
 const Review = require("../models/Review");
 
 const MAX_SEARCH_LENGTH = 500;
+const MAX_FILTER_ARRAY_SIZE = 20;
 const ALLOWED_AMENITIES = [
     "Showers",
     "Parking",
@@ -88,6 +89,11 @@ router.get("/results", async (req, res, next) => {
     // [2.3.1] Input validation: reject invalid rating filter values.
     if (!selectedRatings.every((rating) => Number.isInteger(rating) && rating >= 1 && rating <= 5)) {
         return res.status(400).json({ message: "Invalid ratings filter value." });
+    }
+
+    // [2.3.3] Data length validation: reject oversized search filter arrays.
+    if (selectedAmenities.length > MAX_FILTER_ARRAY_SIZE || selectedLocations.length > MAX_FILTER_ARRAY_SIZE || selectedRatings.length > MAX_FILTER_ARRAY_SIZE) {
+        return res.status(400).json({ message: "Filter selections exceed maximum allowed size." });
     }
 
     try {
