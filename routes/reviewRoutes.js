@@ -46,6 +46,13 @@ router.post("/:establishmentId/create", ensureLoggedIn, uploadReviewImages.array
     const reviewImages = req.files;  // This will hold the uploaded image files
 
     if (!reviewText) {
+      logSecurityEvent({
+        eventType: "INPUT_VALIDATION",
+        outcome: "FAILURE",
+        message: "Review creation rejected: review text is required.",
+        req,
+        metadata: { establishmentId }
+      });
       return res.status(400).json({ message: "Review text is required" });
     }
 
@@ -58,6 +65,13 @@ router.post("/:establishmentId/create", ensureLoggedIn, uploadReviewImages.array
     });
 
     if (existingReview) {
+      logSecurityEvent({
+        eventType: "INPUT_VALIDATION",
+        outcome: "FAILURE",
+        message: "Review creation rejected: duplicate review for establishment.",
+        req,
+        metadata: { establishmentId, userId: req.session.user._id }
+      });
       return res.status(400).json({ message: "You have already posted a review for this establishment" });
     }
 

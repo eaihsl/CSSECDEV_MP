@@ -17,6 +17,16 @@ dotenv.config();
 const sourceEmail = process.env.SOURCE_EMAIL;
 const sourceEmailPassword = process.env.SOURCE_PASSWORD;
 
+function logInputValidationFailure(req, message, metadata = {}) {
+  logSecurityEvent({
+    eventType: "INPUT_VALIDATION",
+    outcome: "FAILURE",
+    message,
+    req,
+    metadata
+  });
+}
+
 // Multer storage for profile picture uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -197,6 +207,7 @@ router.get("/:userId/profile", async (req, res, next) => {
 router.post("/uploadTempProfilePicture", upload.single("profilePicture"), (req, res) => {
   if (!req.file) {
     console.error("No file uploaded.");
+    logInputValidationFailure(req, "Profile picture upload rejected: no file uploaded.");
     return res.status(400).json({ message: "No file uploaded." });
   }
 
@@ -640,6 +651,7 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
     if (password) {
       // 2.1.13 - Re-authenticate: require current password before allowing a change
       if (!currentPassword) {
+        logInputValidationFailure(req, "Profile update rejected: current password missing for password change.", { userId });
         return res.status(400).json({ message: "Your current password is required to set a new password." });
       }
       const isMatch = await bcrypt.compare(currentPassword, user.password);
@@ -650,6 +662,7 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
       // 2.1.5 / 2.1.6 - Enforce same complexity and length requirements as registration
       const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
       if (!passwordRegex.test(password)) {
+        logInputValidationFailure(req, "Profile update rejected: new password does not meet complexity policy.", { userId });
         return res.status(400).json({ message: "Password must be at least 8 characters long, contain at least one uppercase letter, and one number." });
       }
 
@@ -659,6 +672,7 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
         const msSinceChange = Date.now() - new Date(user.passwordChangedAt).getTime();
         if (msSinceChange < ONE_DAY_MS) {
           const hoursLeft = Math.ceil((ONE_DAY_MS - msSinceChange) / (60 * 60 * 1000));
+          logInputValidationFailure(req, "Profile update rejected: password changed too recently.", { userId, hoursLeft });
           return res.status(400).json({ message: `Password was changed recently. Please wait ${hoursLeft} more hour(s) before changing it again.` });
         }
       }
@@ -668,6 +682,7 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
       for (const oldHash of history) {
         const isReused = await bcrypt.compare(password, oldHash);
         if (isReused) {
+          logInputValidationFailure(req, "Profile update rejected: attempted password reuse.", { userId });
           return res.status(400).json({ message: "You cannot reuse a recent password. Please choose a different password." });
         }
       }
@@ -718,6 +733,7 @@ router.delete("/:userId", async (req, res) => {
   const { password } = req.body;
 
   if (!password) {
+    logInputValidationFailure(req, "Account deletion rejected: password is required.", { userId });
     return res.status(400).json({ message: "Password is required." });
   }
 
@@ -811,6 +827,7 @@ router.post("/createGym", async (req, res) => {
 
     const existingEstablishment = await Establishment.findOne({ name: gymName, owner: req.session.user._id });
     if (existingEstablishment) {
+      logInputValidationFailure(req, "Create gym rejected: duplicate establishment name for owner.", { gymName, ownerId: req.session.user._id });
       return res.status(400).json({ message: "You already have a gym with this name." });
     }
 
@@ -967,6 +984,7 @@ router.put("/updateGym/:gymId", gymUpload.single("gymImage"), async (req, res) =
     if (gymName !== existingEstablishment.name) {
       const duplicateEstablishment = await Establishment.findOne({ name: gymName, owner: req.session.user._id });
       if (duplicateEstablishment) {
+        logInputValidationFailure(req, "Update gym rejected: duplicate establishment name for owner.", { gymId, gymName, ownerId: req.session.user._id });
         return res.status(400).json({ message: "You already have a gym with this name." });
       }
     }
@@ -1081,6 +1099,7 @@ router.post("/createGymWithImage", gymUpload.single("gymImage"), async (req, res
     });
 
     if (existingEstablishment) {
+      logInputValidationFailure(req, "Create gym with image rejected: duplicate establishment name for owner.", { gymName, ownerId: req.session.user._id });
       return res.status(400).json({ message: "You already have a gym with this name." });
     }
 
@@ -1198,6 +1217,7 @@ router.delete('/admin/deleteUser/:userId', isAdmin, async (req, res) => {
 
   // Prevent admin from deleting themselves
   if (req.session.user._id === userId) {
+    logInputValidationFailure(req, "Admin delete user rejected: self-delete is not allowed.", { userId });
     return res.status(400).json({ message: 'You cannot delete your own account here.' });
   }
 
