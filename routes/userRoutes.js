@@ -267,6 +267,14 @@ router.post("/register", async (req, res) => {
 
     await newUser.save();
 
+    // 2.1.10 - Seed passwordHistory with the registration hash so it is
+    // checked against on the very first password change attempt.
+    // newUser.password is only the final bcrypt hash after the pre-save hook runs,
+    // so we read it back here and save it as the starting history entry.
+    await User.findByIdAndUpdate(newUser._id, {
+      passwordHistory: [newUser.password]
+    });
+
     req.session.user = {
       _id: newUser._id.toString(),
       username: newUser.username,
@@ -370,24 +378,50 @@ router.post("/login", async (req, res) => {
       if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
         await User.findByIdAndUpdate(user._id, {
           loginAttempts: newAttempts,
-          lockUntil: new Date(Date.now() + LOCKOUT_DURATION_MS)
+          lockUntil: new Date(Date.now() + LOCKOUT_DURATION_MS),
+          lastLoginAttemptAt: new Date(),  // 2.1.12
+          lastLoginSuccess: false          // 2.1.12
         });
         return res.status(403).json({ message: "Too many failed login attempts. Account locked for 15 minutes." });
       }
-      await User.findByIdAndUpdate(user._id, { loginAttempts: newAttempts });
+      await User.findByIdAndUpdate(user._id, {
+        loginAttempts: newAttempts,
+        lastLoginAttemptAt: new Date(),  // 2.1.12
+        lastLoginSuccess: false          // 2.1.12
+      });
       return res.status(401).json({ message: "Incorrect username or password." });
     }
 
     // 2.1.8 - Reset lockout fields on successful login
-    await User.findByIdAndUpdate(user._id, { loginAttempts: 0, lockUntil: null });
+    // 2.1.12 - Capture last login info BEFORE overwriting it, then update
+    const lastLoginAt = user.lastLoginAt || null;
+    const lastLoginAttemptAt = user.lastLoginAttemptAt || null;
+    const lastLoginSuccess = user.lastLoginSuccess;
+
+    await User.findByIdAndUpdate(user._id, {
+      loginAttempts: 0,
+      lockUntil: null,
+      lastLoginAt: new Date(),
+      lastLoginAttemptAt: new Date(),
+      lastLoginSuccess: true
+    });
 
     req.session.user = {
       _id: user._id.toString(),
       username: user.username,
-      role: user.role, // Now the role is retrieved from the database
+      role: user.role,
     };
 
-    res.json({ message: "Login successful!", user: req.session.user });
+    // 2.1.12 - Include previous login info in the response so the frontend can display it
+    res.json({
+      message: "Login successful!",
+      user: req.session.user,
+      lastLogin: {
+        lastLoginAt,
+        lastLoginAttemptAt,
+        lastLoginSuccess
+      }
+    });
 
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -431,17 +465,55 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found." });
     
     const updates = {};
-    const { shortDescription, password, resetProfilePicture } = req.body;
+    const { shortDescription, password, currentPassword, resetProfilePicture } = req.body;
 
     if (shortDescription) updates.shortDescription = shortDescription;
 
     if (password) {
+      // 2.1.13 - Re-authenticate: require current password before allowing a change
+      if (!currentPassword) {
+        return res.status(400).json({ message: "Your current password is required to set a new password." });
+      }
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ message: "Current password is incorrect." });
+      }
+
       // 2.1.5 / 2.1.6 - Enforce same complexity and length requirements as registration
       const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
       if (!passwordRegex.test(password)) {
         return res.status(400).json({ message: "Password must be at least 8 characters long, contain at least one uppercase letter, and one number." });
       }
-      updates.password = await bcrypt.hash(password, 12);
+
+      // 2.1.11 - Prevent changing password if it was changed less than 1 day ago
+      if (user.passwordChangedAt) {
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+        const msSinceChange = Date.now() - new Date(user.passwordChangedAt).getTime();
+        if (msSinceChange < ONE_DAY_MS) {
+          const hoursLeft = Math.ceil((ONE_DAY_MS - msSinceChange) / (60 * 60 * 1000));
+          return res.status(400).json({ message: `Password was changed recently. Please wait ${hoursLeft} more hour(s) before changing it again.` });
+        }
+      }
+
+      // 2.1.10 - Prevent re-use of the last 5 passwords
+      const history = user.passwordHistory || [];
+      for (const oldHash of history) {
+        const isReused = await bcrypt.compare(password, oldHash);
+        if (isReused) {
+          return res.status(400).json({ message: "You cannot reuse a recent password. Please choose a different password." });
+        }
+      }
+
+      const newHash = await bcrypt.hash(password, 12);
+
+      // 2.1.10 - Add current password to history before replacing it, keep last 5 only
+      const updatedHistory = [user.password, ...history].slice(0, 5);
+      updates.passwordHistory = updatedHistory;
+
+      // 2.1.11 - Record the time of this password change
+      updates.passwordChangedAt = new Date();
+
+      updates.password = newHash;
     }
 
     if (req.file) {

@@ -238,7 +238,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                 const data = await response.json();
                 if (response.ok) {
-                    window.location.reload();
+                    // 2.1.12 - Show the user their last login activity before reloading
+                    if (data.lastLogin) {
+                        const { lastLoginAt, lastLoginAttemptAt, lastLoginSuccess } = data.lastLogin;
+                        if (lastLoginAttemptAt) {
+                            const attemptDate = new Date(lastLoginAttemptAt).toLocaleString();
+                            const outcome = lastLoginSuccess ? "successful" : "FAILED";
+                            alert(`Welcome back! Your last login attempt was ${outcome} on ${attemptDate}.`);
+                        }
+                    }
                     if(rememberMe){
                         setCookie("username", username, 30);
                         setCookie("password", password, 30);

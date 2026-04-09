@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (editModal) {
         $('#editProfileModal').on('hidden.bs.modal', () => {
             // Clear password fields
+            document.getElementById('currentPassword').value = '';
             document.getElementById('editPassword').value = '';
             document.getElementById('editConfirmPassword').value = '';
     
@@ -64,10 +65,16 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
 
         const userId = form.getAttribute('data-user-id');
+        const currentPassword = document.getElementById('currentPassword').value;
         const password = document.getElementById('editPassword').value;
         const confirmPassword = document.getElementById('editConfirmPassword').value;
         const shortDescription = document.getElementById('editProfileDescription').value;
         const formData = new FormData();
+
+        if (password && !currentPassword) {
+            alert('Please enter your current password to set a new one.');
+            return;
+        }
 
         if (password && password !== confirmPassword) {
             alert('Passwords do not match.');
@@ -75,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (password) {
+            formData.append('currentPassword', currentPassword);
             formData.append('password', password);
         }
 
@@ -106,7 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Profile updated successfully!');
                 location.reload();
             } else {
-                alert('Error updating profile.');
+                const data = await response.json();
+                alert('Error: ' + (data.message || 'Could not update profile.'));
             }
         } catch (error) {
             console.error('Error:', error);

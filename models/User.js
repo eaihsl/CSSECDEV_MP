@@ -13,8 +13,16 @@ const userSchema = new mongoose.Schema({
   loginAttempts: { type: Number, default: 0 },
   lockUntil: { type: Date, default: null },
   // 2.1.9 - Security question fields
-  securityQuestion: { type: String, default: "Who is your favorite professor?" },
-  securityAnswer: { type: String, default: "kerwin"},
+  securityQuestion: { type: String, default: null },
+  securityAnswer: { type: String, default: null },
+  // 2.1.10 - Password history (store last 5 hashes to prevent re-use)
+  passwordHistory: { type: [String], default: [] },
+  // 2.1.11 - Track when password was last changed
+  passwordChangedAt: { type: Date, default: null },
+  // 2.1.12 - Track last login info
+  lastLoginAt: { type: Date, default: null },
+  lastLoginAttemptAt: { type: Date, default: null },
+  lastLoginSuccess: { type: Boolean, default: null },
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {
