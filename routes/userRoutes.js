@@ -11,6 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const { isAdmin } = require('../middlewares/authMiddleware');
+const { logSecurityEvent } = require("../utils/securityLogger");
 const dotenv = require("dotenv");
 dotenv.config();
 const sourceEmail = process.env.SOURCE_EMAIL;
@@ -210,12 +211,26 @@ router.post("/register", async (req, res) => {
     const { username, email, password, shortDescription = "", role, tempFilename, securityQuestion, securityAnswer } = req.body;
 
     if (!["people", "business"].includes(role)) {
+      logSecurityEvent({
+        eventType: "AUTH_REGISTER",
+        outcome: "FAILURE",
+        message: "Registration rejected because role is invalid.",
+        req,
+        metadata: { username, email, role }
+      });
       return res.status(400).json({ message: "Invalid role selected." });
     }
 
     // Password complexity validation
     const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
     if (!passwordRegex.test(password)) {
+      logSecurityEvent({
+        eventType: "AUTH_REGISTER",
+        outcome: "FAILURE",
+        message: "Registration rejected due to weak password policy.",
+        req,
+        metadata: { username, email }
+      });
       return res.status(400).json({ message: "Password must be at least 8 characters long, contain at least one uppercase letter, and one number." });
     }
 
@@ -229,22 +244,57 @@ router.post("/register", async (req, res) => {
       "what is your favorite food"
     ];
     if (!securityQuestion || !securityAnswer) {
+      logSecurityEvent({
+        eventType: "AUTH_REGISTER",
+        outcome: "FAILURE",
+        message: "Registration rejected because security question/answer is missing.",
+        req,
+        metadata: { username, email }
+      });
       return res.status(400).json({ message: "A security question and answer are required." });
     }
     if (rejectedQuestions.includes(securityQuestion.trim().toLowerCase())) {
+      logSecurityEvent({
+        eventType: "AUTH_REGISTER",
+        outcome: "FAILURE",
+        message: "Registration rejected because security question is too common.",
+        req,
+        metadata: { username, email }
+      });
       return res.status(400).json({ message: "That security question is too common. Please choose a more specific question." });
     }
     if (securityAnswer.trim().length < 3) {
+      logSecurityEvent({
+        eventType: "AUTH_REGISTER",
+        outcome: "FAILURE",
+        message: "Registration rejected because security answer is too short.",
+        req,
+        metadata: { username, email }
+      });
       return res.status(400).json({ message: "Security answer must be at least 3 characters long." });
     }
 
     const existingUser = await User.findOne({ username });
     if (existingUser) {
+      logSecurityEvent({
+        eventType: "AUTH_REGISTER",
+        outcome: "FAILURE",
+        message: "Registration rejected because username is unavailable.",
+        req,
+        metadata: { username, email }
+      });
       return res.status(400).json({ message: "Username unavailable" });
     }
 
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
+      logSecurityEvent({
+        eventType: "AUTH_REGISTER",
+        outcome: "FAILURE",
+        message: "Registration rejected because email is already registered.",
+        req,
+        metadata: { username, email }
+      });
       return res.status(400).json({ message: "E-mail already registered" });
     }
 
@@ -286,10 +336,25 @@ router.post("/register", async (req, res) => {
       profilePicture: newUser.profilePicture
     };
 
+    logSecurityEvent({
+      eventType: "AUTH_REGISTER",
+      outcome: "SUCCESS",
+      message: "User registration succeeded.",
+      req,
+      metadata: { userId: newUser._id.toString(), username: newUser.username, role: newUser.role }
+    });
+
     res.status(201).json({ message: "Registration successful!", user: req.session.user });
 
   } catch (err) {
     console.error("Registration Error:", err);
+    logSecurityEvent({
+      eventType: "AUTH_REGISTER",
+      outcome: "FAILURE",
+      message: "User registration failed due to server error.",
+      req,
+      metadata: { reason: err.message }
+    });
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -323,18 +388,40 @@ router.post("/resetPassword", async (req, res) => {
     if (!user) { user = await User.findOne({ email: username }); }
 
     // Generic message to avoid user enumeration
-    if (!user || !user.securityAnswer) {
+    // logging the failure with details for internal monitoring, but not revealing them to the client
+    if (!user || !user.securityAnswer) { 
+      logSecurityEvent({
+        eventType: "AUTH_PASSWORD_RESET",
+        outcome: "FAILURE",
+        message: "Password reset rejected: unknown account or missing security answer.",
+        req,
+        metadata: { username }
+      });
       return res.status(401).json({ message: "Incorrect username or security answer." });
     }
 
     const answerMatch = await bcrypt.compare(securityAnswer.trim().toLowerCase(), user.securityAnswer);
     if (!answerMatch) {
+      logSecurityEvent({
+        eventType: "AUTH_PASSWORD_RESET",
+        outcome: "FAILURE",
+        message: "Password reset rejected: security answer mismatch.",
+        req,
+        metadata: { username }
+      });
       return res.status(401).json({ message: "Incorrect username or security answer." });
     }
 
     // Enforce same password rules as registration
     const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9]).{8,}$/;
     if (!passwordRegex.test(newPassword)) {
+      logSecurityEvent({
+        eventType: "AUTH_PASSWORD_RESET",
+        outcome: "FAILURE",
+        message: "Password reset rejected due to weak password policy.",
+        req,
+        metadata: { username }
+      });
       return res.status(400).json({ message: "Password must be at least 8 characters long, contain at least one uppercase letter, and one number." });
     }
 
@@ -342,9 +429,24 @@ router.post("/resetPassword", async (req, res) => {
     user.password = newPassword;
     await user.save();
 
+    logSecurityEvent({
+      eventType: "AUTH_PASSWORD_RESET",
+      outcome: "SUCCESS",
+      message: "Password reset succeeded.",
+      req,
+      metadata: { userId: user._id.toString(), username: user.username }
+    });
+
     res.json({ message: "Password reset successfully." });
   } catch (err) {
     console.error("Password reset error:", err);
+    logSecurityEvent({
+      eventType: "AUTH_PASSWORD_RESET",
+      outcome: "FAILURE",
+      message: "Password reset failed due to server error.",
+      req,
+      metadata: { reason: err.message }
+    });
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -363,6 +465,13 @@ router.post("/login", async (req, res) => {
     }
 
     if (!user) {
+      logSecurityEvent({
+        eventType: "AUTH_LOGIN",
+        outcome: "FAILURE",
+        message: "Login failed: account not found.",
+        req,
+        metadata: { username }
+      });
       return res.status(401).json({ message: "Incorrect username or password." });
     }
 
@@ -372,6 +481,13 @@ router.post("/login", async (req, res) => {
 
     if (user.lockUntil && user.lockUntil > Date.now()) {
       const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
+      logSecurityEvent({
+        eventType: "AUTH_LOGIN",
+        outcome: "FAILURE",
+        message: "Login blocked: account is temporarily locked.",
+        req,
+        metadata: { username: user.username, userId: user._id.toString(), minutesLeft }
+      });
       return res.status(403).json({ message: `Account is temporarily locked. Please try again in ${minutesLeft} minute(s).` });
     }
 
@@ -386,12 +502,26 @@ router.post("/login", async (req, res) => {
           lastLoginAttemptAt: new Date(),  // 2.1.12
           lastLoginSuccess: false          // 2.1.12
         });
+        logSecurityEvent({
+          eventType: "AUTH_LOGIN",
+          outcome: "FAILURE",
+          message: "Login failed: account locked after too many attempts.",
+          req,
+          metadata: { username: user.username, userId: user._id.toString(), attempts: newAttempts }
+        });
         return res.status(403).json({ message: "Too many failed login attempts. Account locked for 15 minutes." });
       }
       await User.findByIdAndUpdate(user._id, {
         loginAttempts: newAttempts,
         lastLoginAttemptAt: new Date(),  // 2.1.12
         lastLoginSuccess: false          // 2.1.12
+      });
+      logSecurityEvent({
+        eventType: "AUTH_LOGIN",
+        outcome: "FAILURE",
+        message: "Login failed: invalid credentials.",
+        req,
+        metadata: { username: user.username, userId: user._id.toString(), attempts: newAttempts }
       });
       return res.status(401).json({ message: "Incorrect username or password." });
     }
@@ -416,6 +546,14 @@ router.post("/login", async (req, res) => {
       role: user.role,
     };
 
+    logSecurityEvent({
+      eventType: "AUTH_LOGIN",
+      outcome: "SUCCESS",
+      message: "Login succeeded.",
+      req,
+      metadata: { userId: user._id.toString(), username: user.username, role: user.role }
+    });
+
     // 2.1.12 - Include previous login info in the response so the frontend can display it
     res.json({
       message: "Login successful!",
@@ -428,6 +566,13 @@ router.post("/login", async (req, res) => {
     });
 
   } catch (err) {
+    logSecurityEvent({
+      eventType: "AUTH_LOGIN",
+      outcome: "FAILURE",
+      message: "Login failed due to server error.",
+      req,
+      metadata: { reason: err.message }
+    });
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -435,13 +580,32 @@ router.post("/login", async (req, res) => {
 // Logout a user
 router.get("/logout", (req, res) => {
   if (!req.session.user) {
+    logSecurityEvent({
+      eventType: "AUTH_LOGOUT",
+      outcome: "FAILURE",
+      message: "Logout attempted without an active session.",
+      req
+    });
     return res.redirect("/");
   }
 
   req.session.destroy((err) => {
     if (err) {
+      logSecurityEvent({
+        eventType: "AUTH_LOGOUT",
+        outcome: "FAILURE",
+        message: "Logout failed during session destruction.",
+        req,
+        metadata: { reason: err.message }
+      });
       return res.status(500).json({ message: "Logout failed" });
     }
+    logSecurityEvent({
+      eventType: "AUTH_LOGOUT",
+      outcome: "SUCCESS",
+      message: "Logout succeeded.",
+      req
+    });
     res.clearCookie("connect.sid", { path: "/" });
     return res.redirect("/"); // Redirect to homepage after logout
   });

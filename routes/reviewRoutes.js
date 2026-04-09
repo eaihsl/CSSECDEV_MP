@@ -7,6 +7,7 @@ const path = require("path");
 const { v4: uuidv4 } = require('uuid');
 const fs = require("fs");
 const Comment = require('../models/Comment');
+const { logSecurityEvent } = require("../utils/securityLogger");
 
 const dotenv = require("dotenv");
 dotenv.config();
@@ -98,9 +99,27 @@ async function updateEstablishmentRating(establishmentId) {
     rating: average.toFixed(1)
   });
 }
-
+// logging the failure with details for internal monitoring, but not revealing them to the client
 function ensureLoggedIn(req, res, next) {
-  if (req.session && req.session.user) return next();
+  if (req.session && req.session.user) {
+    logSecurityEvent({
+      eventType: "ACCESS_CONTROL_REVIEW_ACTION",
+      outcome: "SUCCESS",
+      message: "Authenticated review action allowed.",
+      req,
+      metadata: { actionPath: req.originalUrl }
+    });
+    return next();
+  }
+
+  logSecurityEvent({
+    eventType: "ACCESS_CONTROL_REVIEW_ACTION",
+    outcome: "FAILURE",
+    message: "Unauthenticated review action blocked.",
+    req,
+    metadata: { actionPath: req.originalUrl }
+  });
+
   return res.status(401).json({ message: "You must be logged in to post a review." });
 }
 
