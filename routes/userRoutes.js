@@ -375,17 +375,50 @@ router.get("/resetPassword/question", async (req, res) => {
   try {
     const { username } = req.query;
 
-    let user = await User.findOne({ username });
-    if (!user) { user = await User.findOne({ email: username }); }
+    const normalizedUsername = typeof username === "string" ? username.trim() : "";
+    if (!normalizedUsername) {
+      logSecurityEvent({
+        eventType: "AUTH_PASSWORD_RESET_QUESTION",
+        outcome: "FAILURE",
+        message: "Password reset question request rejected: missing username/email.",
+        req
+      });
+      return res.status(400).json({ question: null, message: "Username or email is required." });
+    }
+
+    let user = await User.findOne({ username: normalizedUsername });
+    if (!user) { user = await User.findOne({ email: normalizedUsername }); }
 
     // Return the same response whether the user exists or not to avoid user enumeration
     if (!user || !user.securityQuestion) {
+      logSecurityEvent({
+        eventType: "AUTH_PASSWORD_RESET_QUESTION",
+        outcome: "FAILURE",
+        message: "Password reset question request failed: account not found or no question set.",
+        req,
+        metadata: { username: normalizedUsername }
+      });
       return res.status(200).json({ question: null, message: "No security question found for that account." });
     }
+
+    logSecurityEvent({
+      eventType: "AUTH_PASSWORD_RESET_QUESTION",
+      outcome: "SUCCESS",
+      message: "Password reset question request succeeded.",
+      req,
+      metadata: { userId: user._id.toString(), username: user.username }
+    });
 
     res.json({ question: user.securityQuestion });
   } catch (err) {
     console.error("Reset question fetch error:", err);
+    logSecurityEvent({
+      eventType: "AUTH_PASSWORD_RESET_QUESTION",
+      outcome: "FAILURE",
+      message: "Password reset question request failed due to server error.",
+      req,
+      metadata: { reason: err.message }
+    });
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -466,13 +499,30 @@ router.post("/resetPassword", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
+    const normalizedUsername = typeof username === "string" ? username.trim() : "";
+    const normalizedPassword = typeof password === "string" ? password : "";
+
+    if (!normalizedUsername || !normalizedPassword) {
+      const missingFields = [];
+      if (!normalizedUsername) missingFields.push("username");
+      if (!normalizedPassword) missingFields.push("password");
+      logSecurityEvent({
+        eventType: "AUTH_LOGIN",
+        outcome: "FAILURE",
+        message: "Login failed: missing username/password.",
+        req,
+        metadata: { missingFields }
+      });
+
+      return res.status(400).json({ message: "Username and password are required." });
+    }
 
     // Find user without requiring a role
-    let user = await User.findOne({ username });
+    let user = await User.findOne({ username: normalizedUsername });
 
 // Checks the email list
     if (!user) {
-      user = await User.findOne({ email: username });
+      user = await User.findOne({ email: normalizedUsername });
     }
 
     if (!user) {
@@ -481,7 +531,7 @@ router.post("/login", async (req, res) => {
         outcome: "FAILURE",
         message: "Login failed: account not found.",
         req,
-        metadata: { username }
+        metadata: { username: normalizedUsername }
       });
       return res.status(401).json({ message: "Incorrect username or password." });
     }

@@ -224,10 +224,10 @@ document.addEventListener("DOMContentLoaded", function () {
             const rememberMe = document.getElementById("rememberMe").checked;
             console.log("Password field value before login:", document.getElementById("loginPassword").value);
 
-            if (!username || !password) {
-                alert("Please enter both username and password.");
-                return;
-            }
+            // if (!username || !password) {
+            //     alert("Please enter both username and password.");
+            //     return;
+            // }
 
             try {
                 const response = await fetch("/users/login", {
