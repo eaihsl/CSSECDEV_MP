@@ -8,6 +8,12 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require("fs");
 const Comment = require('../models/Comment');
 const { logSecurityEvent } = require("../utils/securityLogger");
+const {
+  ensureLoggedIn,
+  requireRole,
+  requireReviewOwner,
+  requireNotSelfReviewVote
+} = require("../middlewares/authMiddleware");
 
 const dotenv = require("dotenv");
 dotenv.config();
@@ -37,7 +43,14 @@ const uploadReviewImages = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // Limit file size to 10MB
 });
 
-router.post("/:establishmentId/create", ensureLoggedIn, uploadReviewImages.array('reviewImages', 6), async (req, res) => {
+router.post(
+  "/:establishmentId/create",
+  // 2.2.1: Single site-wide authorization component
+  ensureLoggedIn,
+  // 2.2.3: Enforce business rule that only people accounts can create reviews
+  requireRole(["people"]),
+  uploadReviewImages.array('reviewImages', 6),
+  async (req, res) => {
   try {
     const { reviewText, rating } = req.body;
     const { establishmentId } = req.params;
@@ -113,32 +126,16 @@ async function updateEstablishmentRating(establishmentId) {
     rating: average.toFixed(1)
   });
 }
-// logging the failure with details for internal monitoring, but not revealing them to the client
-function ensureLoggedIn(req, res, next) {
-  if (req.session && req.session.user) {
-    logSecurityEvent({
-      eventType: "ACCESS_CONTROL_REVIEW_ACTION",
-      outcome: "SUCCESS",
-      message: "Authenticated review action allowed.",
-      req,
-      metadata: { actionPath: req.originalUrl }
-    });
-    return next();
-  }
-
-  logSecurityEvent({
-    eventType: "ACCESS_CONTROL_REVIEW_ACTION",
-    outcome: "FAILURE",
-    message: "Unauthenticated review action blocked.",
-    req,
-    metadata: { actionPath: req.originalUrl }
-  });
-
-  return res.status(401).json({ message: "You must be logged in to post a review." });
-}
-
 //edit review
-router.put("/:reviewId/edit", ensureLoggedIn, async (req, res) => {
+router.put(
+  "/:reviewId/edit",
+  // 2.2.1: Single site-wide authorization component
+  ensureLoggedIn,
+  // 2.2.3: Enforce business rule that only people accounts can edit reviews
+  requireRole(["people"]),
+  // 2.2.3: Enforce owner-only review edits
+  requireReviewOwner,
+  async (req, res) => {
   try {
     const { reviewText, rating } = req.body;
     const { reviewId } = req.params;
@@ -161,7 +158,15 @@ router.put("/:reviewId/edit", ensureLoggedIn, async (req, res) => {
 });
 
 // delete review
-router.delete("/:reviewId", ensureLoggedIn, async (req, res) => {
+router.delete(
+  "/:reviewId",
+  // 2.2.1: Single site-wide authorization component
+  ensureLoggedIn,
+  // 2.2.3: Enforce business rule that only people accounts can delete reviews
+  requireRole(["people"]),
+  // 2.2.3: Enforce owner-only review deletion
+  requireReviewOwner,
+  async (req, res) => {
   try {
     const { reviewId } = req.params;
 
@@ -183,7 +188,15 @@ router.delete("/:reviewId", ensureLoggedIn, async (req, res) => {
   }
 });
 
-router.post("/:reviewId/vote", ensureLoggedIn, async (req, res) => {
+router.post(
+  "/:reviewId/vote",
+  // 2.2.1: Single site-wide authorization component
+  ensureLoggedIn,
+  // 2.2.3: Enforce business rule that only people accounts can vote on reviews
+  requireRole(["people"]),
+  // 2.2.3: Enforce no self-voting business rule
+  requireNotSelfReviewVote,
+  async (req, res) => {
   const { reviewId } = req.params;
   const { type } = req.body;
   const userId = req.session.user._id;

@@ -2,27 +2,20 @@ const express = require('express');
 const router = express.Router();
 const Comment = require('../models/Comment');
 const Review = require("../models/Review");
-const { logSecurityEvent } = require("../utils/securityLogger");
-
-// Middleware to ensure user is logged in
-function ensureLoggedIn(req, res, next) {
-  if (req.session && req.session.user) {
-    return next();
-  }
-
-  logSecurityEvent({
-    eventType: "ACCESS_CONTROL_COMMENT_ACTION",
-    outcome: "FAILURE",
-    message: "Comment action blocked: no active session.",
-    req,
-    metadata: { actionPath: req.originalUrl }
-  });
-
-  return res.status(401).json({ message: 'You must be logged in.' });
-}
+const {
+  ensureLoggedIn,
+  requireRole,
+  requireCommentOwner
+} = require("../middlewares/authMiddleware");
 
 // Route: POST /comments/:reviewId/create
-router.post('/:reviewId/create', ensureLoggedIn, async (req, res) => {
+router.post(
+  '/:reviewId/create',
+  // 2.2.1: Single site-wide authorization component
+  ensureLoggedIn,
+  // 2.2.3: Enforce business rule that only people accounts can create comments
+  requireRole(['people']),
+  async (req, res) => {
   const { reviewId } = req.params;
   const { commentText } = req.body;
 
@@ -47,28 +40,20 @@ router.post('/:reviewId/create', ensureLoggedIn, async (req, res) => {
 });
 
 // DELETE /comments/:commentId/delete
-router.delete('/:commentId/delete', ensureLoggedIn, async (req, res) => {
+router.delete(
+  '/:commentId/delete',
+  // 2.2.1: Single site-wide authorization component
+  ensureLoggedIn,
+  // 2.2.3: Enforce business rule that only people accounts can delete comments
+  requireRole(['people']),
+  // 2.2.3: Enforce owner-only comment deletion
+  requireCommentOwner,
+  async (req, res) => {
   const { commentId } = req.params;
 
   try {
     const comment = await Comment.findById(commentId);
     if (!comment) return res.status(404).json({ message: 'Comment not found' });
-
-    // Only allow the user who posted the comment to delete it
-    if (comment.userId.toString() !== req.session.user._id) {
-      logSecurityEvent({
-        eventType: "ACCESS_CONTROL_COMMENT_ACTION",
-        outcome: "FAILURE",
-        message: "Comment delete blocked: user is not the owner.",
-        req,
-        metadata: {
-          commentId,
-          ownerUserId: comment.userId.toString(),
-          actorUserId: req.session.user._id
-        }
-      });
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
 
     // Remove comment from Review.comments[]
     await Review.findByIdAndUpdate(comment.reviewId, {
@@ -84,8 +69,6 @@ router.delete('/:commentId/delete', ensureLoggedIn, async (req, res) => {
   }
 });
 
-// ✅ Export both the router and the middleware properly
 module.exports = {
-  router,
-  ensureLoggedIn
+  router
 };
