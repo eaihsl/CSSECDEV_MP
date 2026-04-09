@@ -79,7 +79,7 @@ router.post("/:establishmentId/create", ensureLoggedIn, uploadReviewImages.array
 
     res.status(201).json({ message: "Review posted successfully!", review: newReview });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
     console.error("Review save failed:", err);
   }
 });
@@ -123,7 +123,7 @@ router.put("/:reviewId/edit", ensureLoggedIn, async (req, res) => {
     res.status(200).json({ message: "Review updated successfully!" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -146,7 +146,7 @@ router.delete("/:reviewId", ensureLoggedIn, async (req, res) => {
     res.status(200).json({ message: "Review deleted successfully!" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 

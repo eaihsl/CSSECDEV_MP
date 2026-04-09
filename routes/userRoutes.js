@@ -286,7 +286,7 @@ router.post("/register", async (req, res) => {
 
   } catch (err) {
     console.error("Registration Error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -306,7 +306,7 @@ router.get("/resetPassword/question", async (req, res) => {
     res.json({ question: user.securityQuestion });
   } catch (err) {
     console.error("Reset question fetch error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -341,7 +341,7 @@ router.post("/resetPassword", async (req, res) => {
     res.json({ message: "Password reset successfully." });
   } catch (err) {
     console.error("Password reset error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -424,7 +424,7 @@ router.post("/login", async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -541,7 +541,7 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
     res.json({ message: "User updated successfully." });
   } catch (err) {
     console.error("Update Error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -629,7 +629,7 @@ router.delete("/:userId", async (req, res) => {
 
   } catch (err) {
     console.error("Delete Error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -674,7 +674,7 @@ router.post("/createGym", async (req, res) => {
     res.status(201).json({ message: "Establishment created successfully!", establishment: newEstablishment });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -721,7 +721,7 @@ router.post("/createGym", async (req, res) => {
 //     res.status(200).json({ message: "Gym updated successfully!", establishment: existingEstablishment });
 //   } catch (err) {
 //     console.error(err);
-//     res.status(500).json({ message: "Server error", error: err.message });
+//     res.status(500).json({ message: "Server error" });
 //   }
 // });
 
@@ -778,7 +778,7 @@ router.post("/createGym", async (req, res) => {
 //     res.status(200).json({ message: "Gym updated successfully!", establishment: existingEstablishment });
 //   } catch (err) {
 //     console.error(err);
-//     res.status(500).json({ message: "Server error", error: err.message });
+//     res.status(500).json({ message: "Server error" });
 //   }
 // });
 
@@ -833,7 +833,7 @@ router.put("/updateGym/:gymId", gymUpload.single("gymImage"), async (req, res) =
     res.status(200).json({ message: "Gym updated successfully!", establishment: existingEstablishment });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -938,7 +938,7 @@ router.post("/createGymWithImage", gymUpload.single("gymImage"), async (req, res
     });
   } catch (err) {
     console.error("Create Gym Error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -1017,7 +1017,7 @@ router.delete('/admin/deleteUser/:userId', isAdmin, async (req, res) => {
     res.json({ message: 'User deleted successfully.' });
   } catch (err) {
     console.error('Admin delete user error:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

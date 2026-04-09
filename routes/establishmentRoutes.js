@@ -81,7 +81,7 @@ router.get("/:id", async (req, res) => {
       isBusiness: req.session.user && req.session.user.role === "business"
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -131,7 +131,7 @@ router.get("/:id/results", async (req, res) => {
       isSearching : true
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -151,7 +151,7 @@ router.get("/:establishmentId/reviews/:reviewId", async (req, res) => {
     // Respond with comments for the review
     res.json({ comments: review.comments });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -183,7 +183,7 @@ router.put("/:id", async (req, res) => {
 
     res.json({ message: "Establishment updated successfully", establishment: updatedEstablishment });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -211,7 +211,7 @@ router.delete("/:id", async (req, res) => {
 
     res.json({ message: "Establishment deleted successfully" });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
  */
