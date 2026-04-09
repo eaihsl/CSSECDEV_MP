@@ -128,30 +128,15 @@ document.addEventListener("DOMContentLoaded", function () {
             const securityQuestion = document.getElementById("securityQuestion").value.trim();
             const securityAnswer = document.getElementById("securityAnswer").value.trim();
 
-            if (!username || !email || !password || !confirmPassword) {
-                alert("Please fill in all required fields.");
-                return;
-            }
-
-            if (!securityQuestion || !securityAnswer) {
-                alert("Please provide a security question and answer.");
-                return;
-            }
-
             const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-            if (emailPattern.test(username)) {
+            if (username && emailPattern.test(username)) {
                 alert('Please do not use an email address as a Username');
                 return;
             }
 
-            if (!emailPattern.test(email)) {
+            if (email && !emailPattern.test(email)) {
                 alert('Please enter a valid email address.');
-                return;
-            }
-
-            if (password !== confirmPassword) {
-                alert("Passwords do not match.");
                 return;
             }
 
@@ -185,7 +170,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const response = await fetch("/users/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, email, password, shortDescription, role, tempFilename, securityQuestion, securityAnswer })
+                    body: JSON.stringify({ username, email, password, confirmPassword, shortDescription, role, tempFilename, securityQuestion, securityAnswer })
                 });
 
                 const data = await response.json();
@@ -309,16 +294,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            if (newPassword !== confirmPassword) {
-                alert("Passwords do not match.");
-                return;
-            }
-
             try {
                 const response = await fetch("/users/resetPassword", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, securityAnswer, newPassword })
+                    body: JSON.stringify({ username, securityAnswer, newPassword, confirmPassword })
                 });
 
                 const data = await response.json();

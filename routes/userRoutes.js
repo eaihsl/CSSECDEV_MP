@@ -27,6 +27,16 @@ function logInputValidationFailure(req, message, metadata = {}) {
   });
 }
 
+function logAccessControlFailure(req, message, metadata = {}) {
+  logSecurityEvent({
+    eventType: "ACCESS_CONTROL",
+    outcome: "FAILURE",
+    message,
+    req,
+    metadata
+  });
+}
+
 // Multer storage for profile picture uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -105,6 +115,7 @@ const fetchUserDetails = async (user) => {
 
 router.get("/profile", async (req, res, next) => {
   if (!req.session.user) {
+      logAccessControlFailure(req, "Profile access blocked: no active session.", { route: "/users/profile" });
       return res.redirect("/users/login");
   }
 
@@ -219,7 +230,35 @@ router.post("/uploadTempProfilePicture", upload.single("profilePicture"), (req, 
 // Register a new user
 router.post("/register", async (req, res) => {
   try {
-    const { username, email, password, shortDescription = "", role, tempFilename, securityQuestion, securityAnswer } = req.body;
+    const { username, email, password, confirmPassword, shortDescription = "", role, tempFilename, securityQuestion, securityAnswer } = req.body;
+
+    if (!username || !email || !password) {
+      logSecurityEvent({
+        eventType: "AUTH_REGISTER",
+        outcome: "FAILURE",
+        message: "Registration rejected because required fields are missing.",
+        req,
+        metadata: {
+          missingFields: [
+            !username ? "username" : null,
+            !email ? "email" : null,
+            !password ? "password" : null
+          ].filter(Boolean)
+        }
+      });
+      return res.status(400).json({ message: "Username, email, and password are required." });
+    }
+
+    if (password !== confirmPassword) {
+      logSecurityEvent({
+        eventType: "AUTH_REGISTER",
+        outcome: "FAILURE",
+        message: "Registration rejected because passwords do not match.",
+        req,
+        metadata: { username, email }
+      });
+      return res.status(400).json({ message: "Passwords do not match." });
+    }
 
     if (!["people", "business"].includes(role)) {
       logSecurityEvent({
@@ -426,7 +465,7 @@ router.get("/resetPassword/question", async (req, res) => {
 // 2.1.9 - Verify security answer and reset password
 router.post("/resetPassword", async (req, res) => {
   try {
-    const { username, securityAnswer, newPassword } = req.body;
+    const { username, securityAnswer, newPassword, confirmPassword } = req.body;
 
     let user = await User.findOne({ username });
     if (!user) { user = await User.findOne({ email: username }); }
@@ -467,6 +506,17 @@ router.post("/resetPassword", async (req, res) => {
         metadata: { username }
       });
       return res.status(400).json({ message: "Password must be at least 8 characters long, contain at least one uppercase letter, and one number." });
+    }
+
+    if (newPassword !== confirmPassword) {
+      logSecurityEvent({
+        eventType: "AUTH_PASSWORD_RESET",
+        outcome: "FAILURE",
+        message: "Password reset rejected because passwords do not match.",
+        req,
+        metadata: { username }
+      });
+      return res.status(400).json({ message: "Passwords do not match." });
     }
 
     // Hash and save via the model's pre-save hook (12 rounds, consistent with registration)
@@ -685,7 +735,16 @@ router.get("/session", (req, res) => {
 router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
   const userId = req.params.userId;
 
+  if (!req.session?.user) {
+    logAccessControlFailure(req, "User update blocked: no active session.", { userId });
+    return res.status(401).json({ message: "Unauthorized. Please log in." });
+  }
+
   if (req.session.user._id !== userId) {
+    logAccessControlFailure(req, "User update blocked: user attempted to update another profile.", {
+      targetUserId: userId,
+      actorUserId: req.session.user._id
+    });
     return res.status(403).json({ message: "Forbidden" });
   }
 
@@ -706,6 +765,7 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
       }
       const isMatch = await bcrypt.compare(currentPassword, user.password);
       if (!isMatch) {
+        logAccessControlFailure(req, "Profile password change blocked: current password mismatch.", { userId });
         return res.status(401).json({ message: "Current password is incorrect." });
       }
 
@@ -782,12 +842,21 @@ router.delete("/:userId", async (req, res) => {
   const userId = req.params.userId;
   const { password } = req.body;
 
+  if (!req.session?.user) {
+    logAccessControlFailure(req, "Account deletion blocked: no active session.", { userId });
+    return res.status(401).json({ message: "Unauthorized. Please log in." });
+  }
+
   if (!password) {
     logInputValidationFailure(req, "Account deletion rejected: password is required.", { userId });
     return res.status(400).json({ message: "Password is required." });
   }
 
   if (req.session.user._id !== userId) {
+    logAccessControlFailure(req, "Account deletion blocked: user attempted to delete another account.", {
+      targetUserId: userId,
+      actorUserId: req.session.user._id
+    });
     return res.status(403).json({ message: "Forbidden" });
   }
 
@@ -800,6 +869,7 @@ router.delete("/:userId", async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      logAccessControlFailure(req, "Account deletion blocked: password verification failed.", { userId });
       return res.status(401).json({ message: "Incorrect password." });
     }
 
@@ -870,6 +940,7 @@ router.delete("/:userId", async (req, res) => {
 router.post("/createGym", async (req, res) => {
   try {
     if (!req.session.user) {
+      logAccessControlFailure(req, "Create gym blocked: no active session.");
       return res.status(401).json({ message: "Unauthorized. Please log in." });
     }
 
@@ -1020,6 +1091,7 @@ router.post("/createGym", async (req, res) => {
 router.put("/updateGym/:gymId", gymUpload.single("gymImage"), async (req, res) => {
   try {
     if (!req.session.user) {
+      logAccessControlFailure(req, "Update gym blocked: no active session.", { gymId: req.params.gymId });
       return res.status(401).json({ message: "Unauthorized. Please log in." });
     }
 
@@ -1080,11 +1152,13 @@ router.delete("/deleteGym/:gymId", async (req, res) => {
   try {
     const user = await User.findOne({ username });
     if (!user) {
+      logAccessControlFailure(req, "Delete gym blocked: invalid username or password.", { gymId, username });
       return res.status(401).json({ message: "Invalid username or password." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      logAccessControlFailure(req, "Delete gym blocked: invalid username or password.", { gymId, username });
       return res.status(401).json({ message: "Invalid username or password." });
     }
 
@@ -1126,6 +1200,7 @@ router.post("/createGymWithImage", gymUpload.single("gymImage"), async (req, res
   console.log("Uploaded gym image file:", req.file);
   try {
     if (!req.session.user) {
+      logAccessControlFailure(req, "Create gym with image blocked: no active session.");
       return res.status(401).json({ message: "Unauthorized. Please log in." });
     }
 
@@ -1267,7 +1342,10 @@ router.delete('/admin/deleteUser/:userId', isAdmin, async (req, res) => {
 
   // Prevent admin from deleting themselves
   if (req.session.user._id === userId) {
-    logInputValidationFailure(req, "Admin delete user rejected: self-delete is not allowed.", { userId });
+    logAccessControlFailure(req, "Admin delete user blocked: self-delete attempt.", {
+      userId,
+      actorUserId: req.session.user._id
+    });
     return res.status(400).json({ message: 'You cannot delete your own account here.' });
   }
 
