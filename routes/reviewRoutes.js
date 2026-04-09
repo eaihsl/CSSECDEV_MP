@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const Review = require("../models/Review");
 const Establishment = require("../models/Establishment");
 const multer = require("multer");
@@ -12,6 +13,19 @@ const { isAuthenticated, preventSelfReviewVote } = require("../middlewares/authM
 
 const dotenv = require("dotenv");
 dotenv.config();
+
+async function hasTransactionSupport() {
+  if (mongoose.connection.readyState !== 1) {
+    return false;
+  }
+
+  try {
+    const hello = await mongoose.connection.db.admin().command({ hello: 1 });
+    return Boolean(hello.setName);
+  } catch (error) {
+    return false;
+  }
+}
 
 const reviewStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -102,6 +116,18 @@ router.post("/:establishmentId/create", ensureLoggedIn, isAuthenticated, uploadR
 });
 
 async function updateEstablishmentRating(establishmentId) {
+  // [2.2.3] Application logic flow: verify establishment exists before applying rating updates.
+  const establishment = await Establishment.findById(establishmentId).select("_id");
+  if (!establishment) {
+    logSecurityEvent({
+      eventType: "ACCESS_CONTROL_REVIEW_ACTION",
+      outcome: "FAILURE",
+      message: "Rating update skipped: establishment does not exist.",
+      metadata: { establishmentId }
+    });
+    return;
+  }
+
   const reviews = await Review.find({ establishmentId });
   if (reviews.length === 0) {
     await Establishment.findByIdAndUpdate(establishmentId, { rating: 0 });
@@ -202,6 +228,19 @@ router.delete("/:reviewId", ensureLoggedIn, isAuthenticated, async (req, res) =>
         }
       });
       return res.status(403).json({ message: "Forbidden. You can only delete your own reviews." });
+    }
+
+    // [2.2.3] Application logic flow: fail closed when transaction support is unavailable for cascade deletion.
+    const transactionSupported = await hasTransactionSupport();
+    if (!transactionSupported) {
+      logSecurityEvent({
+        eventType: "ACCESS_CONTROL_REVIEW_ACTION",
+        outcome: "FAILURE",
+        message: "Review delete blocked: transaction support unavailable for safe cascade.",
+        req,
+        metadata: { reviewId, actorUserId: req.session.user._id }
+      });
+      return res.status(503).json({ message: "Operation unavailable. Safe deletion flow is not supported in this environment." });
     }
 
     review.images.forEach((img) => {

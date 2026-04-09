@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -35,6 +36,19 @@ function logAccessControlFailure(req, message, metadata = {}) {
     req,
     metadata
   });
+}
+
+async function hasTransactionSupport() {
+  if (mongoose.connection.readyState !== 1) {
+    return false;
+  }
+
+  try {
+    const hello = await mongoose.connection.db.admin().command({ hello: 1 });
+    return Boolean(hello.setName);
+  } catch (error) {
+    return false;
+  }
 }
 
 // Multer storage for profile picture uploads
@@ -873,6 +887,18 @@ router.delete("/:userId", async (req, res) => {
       return res.status(401).json({ message: "Incorrect password." });
     }
 
+    // [2.2.3] Application logic flow: block business account deletion while owned gyms still exist.
+    if (user.role === "business") {
+      const ownedGymCount = await Establishment.countDocuments({ owner: userId });
+      if (ownedGymCount > 0) {
+        logAccessControlFailure(req, "Account deletion blocked: business user still owns establishments.", {
+          userId,
+          ownedGymCount
+        });
+        return res.status(409).json({ message: "Delete your owned gyms first before deleting this account." });
+      }
+    }
+
     if (user.profilePicture !== "default_avatar.jpg") {
         const filePath = path.join(__dirname, "../public/profile_pictures", user.profilePicture);
         fs.unlink(filePath, (err) => {
@@ -1181,6 +1207,16 @@ router.delete("/deleteGym/:gymId", isAuthenticated, requireBusinessRole, async (
       return res.status(403).json({ message: "Forbidden. You can only delete your own gyms." });
     }
 
+    // [2.2.3] Application logic flow: fail closed when transaction support is unavailable for cascade deletion.
+    const transactionSupported = await hasTransactionSupport();
+    if (!transactionSupported) {
+      logAccessControlFailure(req, "Delete gym blocked: transaction support unavailable for safe cascade.", {
+        gymId,
+        actorUserId: req.session.user._id
+      });
+      return res.status(503).json({ message: "Operation unavailable. Safe deletion flow is not supported in this environment." });
+    }
+
     const gymReviews = await Review.find({ establishmentId: gymId });
     for (const review of gymReviews) {
       review.images.forEach((img) => {
@@ -1372,6 +1408,19 @@ router.delete('/admin/deleteUser/:userId', isAdmin, async (req, res) => {
   try {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    // [2.2.3] Application logic flow: maintain at least one admin account in the system.
+    if (user.role === 'admin') {
+      const adminCount = await User.countDocuments({ role: 'admin' });
+      if (adminCount <= 1) {
+        logAccessControlFailure(req, "Admin delete user blocked: cannot delete last admin.", {
+          userId,
+          actorUserId: req.session.user._id,
+          adminCount
+        });
+        return res.status(409).json({ message: 'Cannot delete the last admin account.' });
+      }
+    }
 
     // Delete profile picture if not default
     if (user.profilePicture && user.profilePicture !== 'default_avatar.jpg') {
