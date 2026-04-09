@@ -1122,6 +1122,76 @@ router.get('/admin/dashboard', isAdmin, async (req, res, next) => {
   }
 });
 
+// ── ADMIN: view security logs ───────────────────────────────────────────────
+router.get('/admin/security-logs', isAdmin, async (req, res, next) => {
+  try {
+    const DEFAULT_LIMIT = 100;
+    const MAX_LIMIT = 500;
+    const parsedLimit = Number.parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(parsedLimit)
+      ? Math.max(1, Math.min(parsedLimit, MAX_LIMIT))
+      : DEFAULT_LIMIT;
+
+    const securityLogFilePath = path.join(__dirname, '..', 'logs', 'security-events.log');
+    let entries = [];
+
+    if (fs.existsSync(securityLogFilePath)) {
+      const rawLogData = fs.readFileSync(securityLogFilePath, 'utf8').trim();
+
+      if (rawLogData) {
+        entries = rawLogData
+          .split('\n')
+          .slice(-limit)
+          .map((line) => {
+            try {
+              return JSON.parse(line);
+            } catch (parseError) {
+              return {
+                timestamp: new Date().toISOString(),
+                eventType: 'SYSTEM_LOG_PARSE',
+                outcome: 'FAILURE',
+                message: 'Unable to parse one log entry.',
+                request: null,
+                metadata: { line }
+              };
+            }
+          })
+          .reverse();
+      }
+    }
+
+    const displayEntries = entries.map((entry) => ({
+      ...entry,
+      request: entry.request || {},
+      metadataText: JSON.stringify(entry.metadata || {}, null, 2)
+    }));
+
+    logSecurityEvent({
+      eventType: 'ACCESS_CONTROL_LOG_VIEW',
+      outcome: 'SUCCESS',
+      message: 'Admin viewed security logs.',
+      req,
+      metadata: { requestedLimit: limit, returnedEntries: entries.length }
+    });
+
+    return res.render('adminLogs', {
+      title: 'Security Logs',
+      entries: displayEntries,
+      entryCount: entries.length,
+      limit
+    });
+  } catch (err) {
+    logSecurityEvent({
+      eventType: 'ACCESS_CONTROL_LOG_VIEW',
+      outcome: 'FAILURE',
+      message: 'Admin log view failed due to server error.',
+      req,
+      metadata: { reason: err.message }
+    });
+    return next(err);
+  }
+});
+
 // ── ADMIN: delete any user by ID ─────────────────────────────────────────────
 router.delete('/admin/deleteUser/:userId', isAdmin, async (req, res) => {
   const { userId } = req.params;

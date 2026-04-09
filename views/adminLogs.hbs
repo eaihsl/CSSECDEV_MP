@@ -1,0 +1,61 @@
+<div class="container mt-4">
+  <div class="row mb-3">
+    <div class="col d-flex justify-content-between align-items-center">
+      <div>
+        <h2 style="color: #fff;">Security Logs</h2>
+        <p style="color: #ddd;">Showing latest {{entryCount}} event(s). Limit: {{limit}}.</p>
+      </div>
+      <div>
+        <a href="/users/admin/dashboard" class="btn btn-outline-light btn-sm">Back to Admin Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-dark text-white">
+    <div class="card-header">
+      <strong>Security Events</strong>
+    </div>
+    <div class="card-body p-0">
+      {{#if entries.length}}
+      <div class="table-responsive">
+        <table class="table table-dark table-striped table-sm table-bordered mb-0">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #495057;">Timestamp</th>
+              <th style="border: 1px solid #495057;">Event</th>
+              <th style="border: 1px solid #495057;">Outcome</th>
+              <th style="border: 1px solid #495057;">Message</th>
+              <th style="border: 1px solid #495057;">Path</th>
+              <th style="border: 1px solid #495057;">User</th>
+              <th style="border: 1px solid #495057;">IP</th>
+              <th style="border: 1px solid #495057;">Metadata</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each entries}}
+            <tr>
+              <td style="border: 1px solid #495057;">{{timestamp}}</td>
+              <td style="border: 1px solid #495057;">{{eventType}}</td>
+              <td style="border: 1px solid #495057;">
+                <span class="badge {{#if (equal outcome 'SUCCESS')}}badge-success{{else}}badge-danger{{/if}}">
+                  {{outcome}}
+                </span>
+              </td>
+              <td style="border: 1px solid #495057;">{{message}}</td>
+              <td style="border: 1px solid #495057;">{{request.path}}</td>
+              <td style="border: 1px solid #495057;">{{request.userId}}</td>
+              <td style="border: 1px solid #495057;">{{request.ip}}</td>
+              <td style="border: 1px solid #495057;"><pre class="mb-0 text-light" style="white-space: pre-wrap; max-width: 380px;">{{metadataText}}</pre></td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      {{else}}
+      <div class="p-4">
+        <p class="mb-0" style="color: #ddd;">No security log entries found yet.</p>
+      </div>
+      {{/if}}
+    </div>
+  </div>
+</div>
