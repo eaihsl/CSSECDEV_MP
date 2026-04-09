@@ -1088,6 +1088,32 @@ router.post("/createGym", isAuthenticated, requireBusinessRole, async (req, res)
       return res.status(400).json({ message: "Invalid region or amenities value." });
     }
 
+    // [2.3.2] Range validation: contact number is required field with strict format.
+    if (!contactNumber || typeof contactNumber !== "string" || !PHONE_NUMBER_PATTERN.test(contactNumber)) {
+      logInputValidationFailure(req, "Create gym rejected: contact number is required and must match format +63 XXX-XXX-XXXX.", {
+        contactNumberProvided: !!contactNumber,
+        contactNumberFormat: contactNumber ? PHONE_NUMBER_PATTERN.test(contactNumber) : null
+      });
+      return res.status(400).json({ message: "Contact number is required and must match format +63 XXX-XXX-XXXX." });
+    }
+
+    // [2.3.2] Range validation: address cannot be empty string if provided.
+    if (address !== undefined && address !== null && address.trim() === "") {
+      logInputValidationFailure(req, "Create gym rejected: address cannot be empty string.", {
+        addressProvided: true,
+        addressTrimmed: address.trim()
+      });
+      return res.status(400).json({ message: "Address cannot be empty string if provided." });
+    }
+
+    // [2.3.2] Range validation: amenities array must not exceed 10 items.
+    if (amenitiesList.length > 10) {
+      logInputValidationFailure(req, "Create gym rejected: amenities array exceeds maximum of 10 items.", {
+        amenitiesCount: amenitiesList.length
+      });
+      return res.status(400).json({ message: "Maximum 10 amenities allowed." });
+    }
+
     const existingEstablishment = await Establishment.findOne({ name: gymName, owner: req.session.user._id });
     if (existingEstablishment) {
       logInputValidationFailure(req, "Create gym rejected: duplicate establishment name for owner.", { gymName, ownerId: req.session.user._id });
@@ -1422,6 +1448,32 @@ router.post("/createGymWithImage", isAuthenticated, requireBusinessRole, gymUplo
         amenities: amenitiesList
       });
       return res.status(400).json({ message: "Invalid region or amenities value." });
+    }
+
+    // [2.3.2] Range validation: contact number is required field with strict format.
+    if (!contactNumber || typeof contactNumber !== "string" || !PHONE_NUMBER_PATTERN.test(contactNumber)) {
+      logInputValidationFailure(req, "Create gym with image rejected: contact number is required and must match format +63 XXX-XXX-XXXX.", {
+        contactNumberProvided: !!contactNumber,
+        contactNumberFormat: contactNumber ? PHONE_NUMBER_PATTERN.test(contactNumber) : null
+      });
+      return res.status(400).json({ message: "Contact number is required and must match format +63 XXX-XXX-XXXX." });
+    }
+
+    // [2.3.2] Range validation: address cannot be empty string if provided.
+    if (address !== undefined && address !== null && address.trim() === "") {
+      logInputValidationFailure(req, "Create gym with image rejected: address cannot be empty string.", {
+        addressProvided: true,
+        addressTrimmed: address.trim()
+      });
+      return res.status(400).json({ message: "Address cannot be empty string if provided." });
+    }
+
+    // [2.3.2] Range validation: amenities array must not exceed 10 items.
+    if (amenitiesList.length > 10) {
+      logInputValidationFailure(req, "Create gym with image rejected: amenities array exceeds maximum of 10 items.", {
+        amenitiesCount: amenitiesList.length
+      });
+      return res.status(400).json({ message: "Maximum 10 amenities allowed." });
     }
 
     // let amenities = req.body["amenities[]"] || [];

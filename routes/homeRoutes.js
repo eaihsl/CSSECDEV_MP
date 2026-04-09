@@ -60,6 +60,11 @@ router.get("/results", async (req, res, next) => {
     const selectedRatings = Array.isArray(req.query.ratings) ? req.query.ratings.map(Number) : req.query.ratings ? [Number(req.query.ratings)] : [];
     const sortBy = Number(req.query.sortby) || 1;
 
+    // [2.3.2] Range validation: sort option must be in range 1-5.
+    if (sortBy < 1 || sortBy > 5) {
+        return res.status(400).json({ message: "Invalid sort option (1-5)." });
+    }
+
     // [2.3.1] Input validation: reject invalid or unsafe search name input.
     if (typeof searchName !== "string" || searchName.length > MAX_SEARCH_LENGTH || UNSAFE_REGEX_PATTERN.test(searchName)) {
         return res.status(400).json({ message: "Invalid name search input." });
