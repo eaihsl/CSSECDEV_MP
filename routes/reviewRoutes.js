@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require("fs");
 const Comment = require('../models/Comment');
 const { logSecurityEvent } = require("../utils/securityLogger");
+const { isAuthenticated, preventSelfReviewVote } = require("../middlewares/authMiddleware");
 
 const dotenv = require("dotenv");
 dotenv.config();
@@ -37,7 +38,8 @@ const uploadReviewImages = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // Limit file size to 10MB
 });
 
-router.post("/:establishmentId/create", ensureLoggedIn, uploadReviewImages.array('reviewImages', 6), async (req, res) => {
+// [2.2.1] Additive site-wide authorization check for review creation.
+router.post("/:establishmentId/create", ensureLoggedIn, isAuthenticated, uploadReviewImages.array('reviewImages', 6), async (req, res) => {
   try {
     const { reviewText, rating } = req.body;
     const { establishmentId } = req.params;
@@ -138,7 +140,8 @@ function ensureLoggedIn(req, res, next) {
 }
 
 //edit review
-router.put("/:reviewId/edit", ensureLoggedIn, async (req, res) => {
+// [2.2.1] Additive site-wide authorization check for review editing.
+router.put("/:reviewId/edit", ensureLoggedIn, isAuthenticated, async (req, res) => {
   try {
     const { reviewText, rating } = req.body;
     const { reviewId } = req.params;
@@ -161,7 +164,8 @@ router.put("/:reviewId/edit", ensureLoggedIn, async (req, res) => {
 });
 
 // delete review
-router.delete("/:reviewId", ensureLoggedIn, async (req, res) => {
+// [2.2.1] Additive site-wide authorization check for review deletion.
+router.delete("/:reviewId", ensureLoggedIn, isAuthenticated, async (req, res) => {
   try {
     const { reviewId } = req.params;
 
@@ -183,7 +187,8 @@ router.delete("/:reviewId", ensureLoggedIn, async (req, res) => {
   }
 });
 
-router.post("/:reviewId/vote", ensureLoggedIn, async (req, res) => {
+// [2.2.1] Additive site-wide authorization checks for review voting and self-vote prevention.
+router.post("/:reviewId/vote", ensureLoggedIn, isAuthenticated, preventSelfReviewVote, async (req, res) => {
   const { reviewId } = req.params;
   const { type } = req.body;
   const userId = req.session.user._id;

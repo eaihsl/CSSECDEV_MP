@@ -3,6 +3,7 @@ const router = express.Router();
 const Comment = require('../models/Comment');
 const Review = require("../models/Review");
 const { logSecurityEvent } = require("../utils/securityLogger");
+const { isAuthenticated } = require("../middlewares/authMiddleware");
 
 // Middleware to ensure user is logged in
 function ensureLoggedIn(req, res, next) {
@@ -22,7 +23,8 @@ function ensureLoggedIn(req, res, next) {
 }
 
 // Route: POST /comments/:reviewId/create
-router.post('/:reviewId/create', ensureLoggedIn, async (req, res) => {
+// [2.2.1] Additive site-wide authorization check for comment creation.
+router.post('/:reviewId/create', ensureLoggedIn, isAuthenticated, async (req, res) => {
   const { reviewId } = req.params;
   const { commentText } = req.body;
 
@@ -47,7 +49,8 @@ router.post('/:reviewId/create', ensureLoggedIn, async (req, res) => {
 });
 
 // DELETE /comments/:commentId/delete
-router.delete('/:commentId/delete', ensureLoggedIn, async (req, res) => {
+// [2.2.1] Additive site-wide authorization check for comment deletion.
+router.delete('/:commentId/delete', ensureLoggedIn, isAuthenticated, async (req, res) => {
   const { commentId } = req.params;
 
   try {

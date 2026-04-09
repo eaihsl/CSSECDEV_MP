@@ -10,7 +10,7 @@ const Comment = require('../models/Comment');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
-const { isAdmin } = require('../middlewares/authMiddleware');
+const { isAdmin, isAuthenticated, requireBusinessRole } = require('../middlewares/authMiddleware');
 const { logSecurityEvent } = require("../utils/securityLogger");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -937,7 +937,8 @@ router.delete("/:userId", async (req, res) => {
   }
 });
 
-router.post("/createGym", async (req, res) => {
+// [2.2.1] Site-wide authorization checks for gym creation.
+router.post("/createGym", isAuthenticated, requireBusinessRole, async (req, res) => {
   try {
     if (!req.session.user) {
       logAccessControlFailure(req, "Create gym blocked: no active session.");
@@ -1088,7 +1089,8 @@ router.post("/createGym", async (req, res) => {
 //   }
 // });
 
-router.put("/updateGym/:gymId", gymUpload.single("gymImage"), async (req, res) => {
+// [2.2.1] Site-wide authorization checks for gym updates.
+router.put("/updateGym/:gymId", isAuthenticated, requireBusinessRole, gymUpload.single("gymImage"), async (req, res) => {
   try {
     if (!req.session.user) {
       logAccessControlFailure(req, "Update gym blocked: no active session.", { gymId: req.params.gymId });
@@ -1145,7 +1147,8 @@ router.put("/updateGym/:gymId", gymUpload.single("gymImage"), async (req, res) =
   }
 });
 
-router.delete("/deleteGym/:gymId", async (req, res) => {
+// [2.2.1] Site-wide authorization checks for gym deletion.
+router.delete("/deleteGym/:gymId", isAuthenticated, requireBusinessRole, async (req, res) => {
   const { username, password } = req.body;
   const { gymId } = req.params;
 
@@ -1196,7 +1199,8 @@ router.delete("/deleteGym/:gymId", async (req, res) => {
   }
 });
 
-router.post("/createGymWithImage", gymUpload.single("gymImage"), async (req, res) => {
+// [2.2.1] Site-wide authorization checks for gym creation with image upload.
+router.post("/createGymWithImage", isAuthenticated, requireBusinessRole, gymUpload.single("gymImage"), async (req, res) => {
   console.log("Uploaded gym image file:", req.file);
   try {
     if (!req.session.user) {
