@@ -4,7 +4,7 @@ const Establishment = require("../models/Establishment");
 const Review = require("../models/Review");
 
 // Get all establishments
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
     try {
         const establishments = await Establishment.find().lean();
 
@@ -23,12 +23,12 @@ router.get("/", async (req, res) => {
 
         res.render("home", { establishments, user: req.session.user || null, searchName : "", searchDesc : "", amenities : [], locations : [], ratings : [] });
     } catch (error) {
-        res.status(500).send("Internal Server Error");
+        next(error);
     }
 });
 
 // Search results
-router.get("/results", async (req, res) => {
+router.get("/results", async (req, res, next) => {
     const searchName = req.query.nameSearch || '';
     const searchDesc= req.query.descSearch || '';
     // Hope you like ternary operators
@@ -72,7 +72,7 @@ router.get("/results", async (req, res) => {
 
         res.render("home", { establishments, user: req.session.user || null, searchName, searchDesc, amenities : selectedAmenities, locations : selectedLocations, ratings : selectedRatings });
     } catch (error) {
-        res.status(500).send("Internal Server Error");
+        next(error);
     }
 });
 

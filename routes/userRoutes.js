@@ -92,16 +92,18 @@ const fetchUserDetails = async (user) => {
   return { establishments, userReviews, isBusiness };
 };
 
-router.get("/profile", async (req, res) => {
+router.get("/profile", async (req, res, next) => {
   if (!req.session.user) {
       return res.redirect("/users/login");
   }
 
   try {
       const user = await User.findById(req.session.user._id).lean();
-      if (!user) {
-          return res.status(404).send("Incorrect Username or Password");
-      }
+        if (!user) {
+          const error = new Error("Resource not found");
+          error.status = 404;
+          return next(error);
+        }
 
       const { establishments, userReviews, isBusiness } = await fetchUserDetails(user);
 
@@ -134,18 +136,20 @@ router.get("/profile", async (req, res) => {
       
   } catch (err) {
       console.error("Error retrieving profile:", err);
-      res.status(500).send("Server error");
+      next(err);
   }
 });
 
-router.get("/:userId/profile", async (req, res) => {
+router.get("/:userId/profile", async (req, res, next) => {
   const userId = req.params.userId;
 
   try {
       const user = await User.findById(userId).lean();
-      if (!user) {
-          return res.status(404).send("Incorrect Username or Password");
-      }
+        if (!user) {
+          const error = new Error("Resource not found");
+          error.status = 404;
+          return next(error);
+        }
 
       const { establishments, userReviews, isBusiness } = await fetchUserDetails(user);
 
@@ -185,7 +189,7 @@ router.get("/:userId/profile", async (req, res) => {
 
   } catch (err) {
       console.error("Error retrieving user profile:", err);
-      res.status(500).send("Server error");
+      next(err);
   }
 });
 
@@ -944,13 +948,13 @@ router.post("/createGymWithImage", gymUpload.single("gymImage"), async (req, res
 
 
 // ── ADMIN: view all users ────────────────────────────────────────────────────
-router.get('/admin/dashboard', isAdmin, async (req, res) => {
+router.get('/admin/dashboard', isAdmin, async (req, res, next) => {
   try {
     const users = await User.find({}, 'username email role profilePicture createdAt').lean();
     res.render('admin', { users });
   } catch (err) {
     console.error('Admin dashboard error:', err);
-    res.status(500).send('Server error');
+    next(err);
   }
 });
 

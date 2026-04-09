@@ -88,6 +88,35 @@ app.use("/establishments", establishmentRoutes); // Establishment routes
 app.use("/reviews", reviewRoutes);
 app.use('/comments', commentRoutes.router);
 
+// Render a custom not-found page for unmatched routes.
+app.use((req, res) => {
+  res.status(404).render("error", {
+    title: "Page Not Found",
+    statusCode: 404,
+    message: "The page you requested could not be found."
+  });
+});
+
+// Render generic error pages to avoid exposing internal details.
+app.use((err, req, res, next) => {
+  console.error("Unhandled server error:", err);
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  const statusCode = err.status || 500;
+  const isNotFound = statusCode === 404;
+
+  res.status(statusCode).render("error", {
+    title: isNotFound ? "Page Not Found" : "Server Error",
+    statusCode,
+    message: isNotFound
+      ? "The page you requested could not be found."
+      : "Something went wrong. Please try again later."
+  });
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server running on http://127.0.0.1:${PORT}`));
