@@ -10,12 +10,7 @@ const Comment = require('../models/Comment');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
-const {
-  isAdmin,
-  ensureLoggedIn,
-  requireRole,
-  requireEstablishmentOwner
-} = require('../middlewares/authMiddleware');
+const { isAdmin } = require('../middlewares/authMiddleware');
 const { logSecurityEvent } = require("../utils/securityLogger");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -942,14 +937,13 @@ router.delete("/:userId", async (req, res) => {
   }
 });
 
-router.post(
-  "/createGym",
-  // 2.2.1: Single site-wide authorization component
-  ensureLoggedIn,
-  // 2.2.3: Enforce business rule that only business accounts can create establishments
-  requireRole(["business"]),
-  async (req, res) => {
+router.post("/createGym", async (req, res) => {
   try {
+    if (!req.session.user) {
+      logAccessControlFailure(req, "Create gym blocked: no active session.");
+      return res.status(401).json({ message: "Unauthorized. Please log in." });
+    }
+
     const { gymName, gymDesc, address, contactNumber, regions, amenities, profilePicture } = req.body;
 
     const existingEstablishment = await Establishment.findOne({ name: gymName, owner: req.session.user._id });
@@ -1094,23 +1088,19 @@ router.post(
 //   }
 // });
 
-router.put(
-  "/updateGym/:gymId",
-  // 2.2.1: Single site-wide authorization component
-  ensureLoggedIn,
-  // 2.2.3: Enforce business rule that only business accounts can update establishments
-  requireRole(["business"]),
-  // 2.2.3: Enforce owner-only establishment updates
-  requireEstablishmentOwner,
-  gymUpload.single("gymImage"),
-  async (req, res) => {
+router.put("/updateGym/:gymId", gymUpload.single("gymImage"), async (req, res) => {
   try {
+    if (!req.session.user) {
+      logAccessControlFailure(req, "Update gym blocked: no active session.", { gymId: req.params.gymId });
+      return res.status(401).json({ message: "Unauthorized. Please log in." });
+    }
+
     const { gymId } = req.params;
     const { gymName, gymDesc, address, contactNumber, regions, amenities, resetImage } = req.body;
 
-    const existingEstablishment = await Establishment.findById(gymId);
+    const existingEstablishment = await Establishment.findOne({ _id: gymId, owner: req.session.user._id });
     if (!existingEstablishment) {
-      return res.status(404).json({ message: "Gym not found." });
+      return res.status(404).json({ message: "Gym not found or you don't have permission to edit it." });
     }
 
     if (gymName !== existingEstablishment.name) {
@@ -1155,35 +1145,21 @@ router.put(
   }
 });
 
-router.delete(
-  "/deleteGym/:gymId",
-  // 2.2.1: Single site-wide authorization component
-  ensureLoggedIn,
-  // 2.2.3: Enforce business rule that only business accounts can delete establishments
-  requireRole(["business"]),
-  // 2.2.3: Enforce owner-only establishment deletion
-  requireEstablishmentOwner,
-  async (req, res) => {
-  const { password } = req.body;
+router.delete("/deleteGym/:gymId", async (req, res) => {
+  const { username, password } = req.body;
   const { gymId } = req.params;
 
   try {
-    // 2.2.2: Fail securely by requiring re-authentication for destructive operations
-    if (!password) {
-      logAccessControlFailure(req, "Delete gym blocked: missing password re-authentication.", { gymId });
-      return res.status(401).json({ message: "Invalid credentials." });
-    }
-
-    const user = await User.findById(req.session.user._id);
+    const user = await User.findOne({ username });
     if (!user) {
-      logAccessControlFailure(req, "Delete gym blocked: session user not found.", { gymId, actorUserId: req.session.user._id });
-      return res.status(401).json({ message: "Invalid credentials." });
+      logAccessControlFailure(req, "Delete gym blocked: invalid username or password.", { gymId, username });
+      return res.status(401).json({ message: "Invalid username or password." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      logAccessControlFailure(req, "Delete gym blocked: invalid password re-authentication.", { gymId, actorUserId: req.session.user._id });
-      return res.status(401).json({ message: "Invalid credentials." });
+      logAccessControlFailure(req, "Delete gym blocked: invalid username or password.", { gymId, username });
+      return res.status(401).json({ message: "Invalid username or password." });
     }
 
     const gymReviews = await Review.find({ establishmentId: gymId });
@@ -1220,16 +1196,14 @@ router.delete(
   }
 });
 
-router.post(
-  "/createGymWithImage",
-  // 2.2.1: Single site-wide authorization component
-  ensureLoggedIn,
-  // 2.2.3: Enforce business rule that only business accounts can create establishments
-  requireRole(["business"]),
-  gymUpload.single("gymImage"),
-  async (req, res) => {
+router.post("/createGymWithImage", gymUpload.single("gymImage"), async (req, res) => {
   console.log("Uploaded gym image file:", req.file);
   try {
+    if (!req.session.user) {
+      logAccessControlFailure(req, "Create gym with image blocked: no active session.");
+      return res.status(401).json({ message: "Unauthorized. Please log in." });
+    }
+
     const {
       gymName,
       gymDesc,
