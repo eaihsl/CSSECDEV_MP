@@ -920,7 +920,7 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found." });
     
     const updates = {};
-    const { shortDescription, password, currentPassword, resetProfilePicture } = req.body;
+    const { shortDescription, password, currentPassword, confirmPassword, resetProfilePicture } = req.body;
 
     // [2.3.3] Data length validation: short description must not exceed maximum length.
     if (shortDescription && shortDescription.length > MAX_SHORT_DESCRIPTION_LENGTH) {
