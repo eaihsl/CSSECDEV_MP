@@ -76,14 +76,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (password && password !== confirmPassword) {
-            alert('Passwords do not match.');
-            return;
-        }
-
         if (password) {
             formData.append('currentPassword', currentPassword);
             formData.append('password', password);
+            formData.append('confirmPassword', confirmPassword);
         }
 
         if (shortDescription) {

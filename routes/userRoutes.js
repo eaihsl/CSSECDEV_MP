@@ -939,6 +939,11 @@ router.put("/:userId", upload.single("profilePicture"), async (req, res) => {
         logInputValidationFailure(req, "Profile update rejected: current password missing for password change.", { userId });
         return res.status(400).json({ message: "Your current password is required to set a new password." });
       }
+
+      if (password !== confirmPassword) {
+        logInputValidationFailure(req, "Profile update rejected: passwords do not match.", { userId });
+        return res.status(400).json({ message: "Passwords do not match." });
+      }
       const isMatch = await bcrypt.compare(currentPassword, user.password);
       if (!isMatch) {
         logAccessControlFailure(req, "Profile password change blocked: current password mismatch.", { userId });
