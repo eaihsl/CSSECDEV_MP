@@ -9,6 +9,29 @@ document.addEventListener("DOMContentLoaded", function () {
     const registerModal = document.getElementById("registerModal");
 
     const loginModal = document.getElementById("loginModal");
+    let isInternalNavigation = false;
+
+    // Mark same-origin link and form navigations so they don't trigger tab-close logout.
+    document.addEventListener("click", function (event) {
+        const link = event.target.closest("a[href]");
+        if (!link) return;
+
+        const href = link.getAttribute("href");
+        if (!href || href.startsWith("#") || href.startsWith("javascript:")) return;
+
+        try {
+            const linkUrl = new URL(href, window.location.href);
+            if (linkUrl.origin === window.location.origin) {
+                isInternalNavigation = true;
+            }
+        } catch (error) {
+            // Ignore malformed URLs and keep default behavior.
+        }
+    });
+
+    document.addEventListener("submit", function () {
+        isInternalNavigation = true;
+    });
 
     // If Remember Me is unchecked, logout when the tab/window closes.
     // Skip once when we intentionally reload after successful login.
@@ -16,8 +39,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const tabCloseLogoutEnabled = sessionStorage.getItem(TAB_CLOSE_LOGOUT_KEY) === "true";
         const skipNextUnloadLogout = sessionStorage.getItem(SKIP_NEXT_UNLOAD_LOGOUT_KEY) === "true";
 
-        if (skipNextUnloadLogout) {
+        if (skipNextUnloadLogout || isInternalNavigation) {
             sessionStorage.removeItem(SKIP_NEXT_UNLOAD_LOGOUT_KEY);
+            isInternalNavigation = false;
             return;
         }
 
