@@ -1,18 +1,6 @@
 let selectedFile = null;
-
-window.onload = function() {
-    const username = getCookie("username");
-    const password = getCookie("password");
-    
-    
-
-    if (username) {
-        document.getElementById("loginUsername").value = username;
-    }
-    if (password) {
-        document.getElementById("loginPassword").value = password;
-    }
-}
+const TAB_CLOSE_LOGOUT_KEY = "tabCloseLogoutEnabled";
+const SKIP_NEXT_UNLOAD_LOGOUT_KEY = "skipNextUnloadLogout";
 
 document.addEventListener("DOMContentLoaded", function () {
     const profilePictureInput = document.getElementById("profilePictureFile");
@@ -21,6 +9,22 @@ document.addEventListener("DOMContentLoaded", function () {
     const registerModal = document.getElementById("registerModal");
 
     const loginModal = document.getElementById("loginModal");
+
+    // If Remember Me is unchecked, logout when the tab/window closes.
+    // Skip once when we intentionally reload after successful login.
+    window.addEventListener("beforeunload", function () {
+        const tabCloseLogoutEnabled = sessionStorage.getItem(TAB_CLOSE_LOGOUT_KEY) === "true";
+        const skipNextUnloadLogout = sessionStorage.getItem(SKIP_NEXT_UNLOAD_LOGOUT_KEY) === "true";
+
+        if (skipNextUnloadLogout) {
+            sessionStorage.removeItem(SKIP_NEXT_UNLOAD_LOGOUT_KEY);
+            return;
+        }
+
+        if (tabCloseLogoutEnabled) {
+            navigator.sendBeacon("/users/logout");
+        }
+    });
 
     function resetLoginModal() {
         const username = document.getElementById("loginUsername");
@@ -176,9 +180,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 const data = await response.json();
                 if (response.ok) {
                     console.log("Registration Successful:", data);
-
-
-                    setCookie('authToken', data.token, 30);
                     window.location.reload();
                 } else {
                     alert("Error: " + (data.message || "Unknown error"));
@@ -190,17 +191,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (loginButton) {
-    window.onload = function() {
-        const username = getCookie("username");
-        const password = getCookie("password");
-        if (username) {
-            document.getElementById("loginUsername").value = username;
-        }
-        if (password) {
-            document.getElementById("loginPassword").value = password;
-        }
-    }
-
         loginButton.addEventListener("click", async function (event) {
             event.preventDefault();
 
@@ -232,13 +222,16 @@ document.addEventListener("DOMContentLoaded", function () {
                             alert(`Welcome back! Your last login attempt was ${outcome} on ${attemptDate}.`);
                         }
                     }
-                    if(rememberMe){
-                        setCookie("username", username, 30);
-                        setCookie("password", password, 30);
-                    }else{
-                        setCookie("username", username, -1);
-                        setCookie("password", password, -1);
+                    
+                    if (rememberMe) {
+                        sessionStorage.removeItem(TAB_CLOSE_LOGOUT_KEY);
+                    } else {
+                        sessionStorage.setItem(TAB_CLOSE_LOGOUT_KEY, "true");
                     }
+
+                    // Avoid immediate self-logout caused by the intentional post-login reload.
+                    sessionStorage.setItem(SKIP_NEXT_UNLOAD_LOGOUT_KEY, "true");
+
                     window.location.reload();
                 } else {
                     alert(`Error: ${data.message}`);
@@ -344,26 +337,3 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 })
-
-function setCookie(cname,cvalue,exdays) {
-    const d = new Date();
-    d.setTime(d.getTime() + (exdays*24*60*60*1000));
-    let expires = "expires=" + d.toUTCString();
-    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
-  }
-  
-  function getCookie(cname) {
-    let name = cname + "=";
-    let decodedCookie = decodeURIComponent(document.cookie);
-    let ca = decodedCookie.split(';');
-    for(let i = 0; i < ca.length; i++) {
-      let c = ca[i];
-      while (c.charAt(0) == ' ') {
-        c = c.substring(1);
-      }
-      if (c.indexOf(name) == 0) {
-        return c.substring(name.length, c.length);
-      }
-    }
-    return "";
-  }

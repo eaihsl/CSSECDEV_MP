@@ -27,6 +27,7 @@ const MAX_GYM_NAME_LENGTH = 100;
 const MAX_GYM_DESC_LENGTH = 500;
 const MAX_GYM_ADDRESS_LENGTH = 200;
 const PHONE_NUMBER_PATTERN = /^(?:09\d{9}|\+639\d{9}|09\d{2}(?:[-\s]\d{3})(?:[-\s]\d{4})|\+63[\s-]?9\d{2}(?:[-\s]\d{3})(?:[-\s]\d{4}))$/;
+const REMEMBER_ME_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 const ALLOWED_AMENITIES = [
   "Showers",
   "Parking",
@@ -645,9 +646,10 @@ router.post("/resetPassword", async (req, res) => {
 // Login a user
 router.post("/login", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, rememberMe } = req.body;
     const normalizedUsername = typeof username === "string" ? username.trim() : "";
     const normalizedPassword = typeof password === "string" ? password : "";
+    const shouldRememberMe = rememberMe === true || rememberMe === "true";
 
     if (!normalizedUsername || !normalizedPassword) {
       const missingFields = [];
@@ -774,23 +776,37 @@ router.post("/login", async (req, res) => {
       role: user.role,
     };
 
+    if (shouldRememberMe) {
+      req.session.cookie.maxAge = REMEMBER_ME_DURATION_MS;
+    } else {
+      req.session.cookie.maxAge = null;
+    }
+
     logSecurityEvent({
       eventType: "AUTH_LOGIN",
       outcome: "SUCCESS",
       message: "Login succeeded.",
       req,
-      metadata: { userId: user._id.toString(), username: user.username, role: user.role }
+      metadata: { userId: user._id.toString(), username: user.username, role: user.role, rememberMe: shouldRememberMe }
     });
 
-    // 2.1.12 - Include previous login info in the response so the frontend can display it
-    res.json({
-      message: "Login successful!",
-      user: req.session.user,
-      lastLogin: {
-        lastLoginAt,
-        lastLoginAttemptAt,
-        lastLoginSuccess
+    // Save the session to ensure the updated cookie maxAge setting is persisted and sent to the client
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        return res.status(500).json({ message: "Server error" });
       }
+
+      // 2.1.12 - Include previous login info in the response so the frontend can display it
+      res.json({
+        message: "Login successful!",
+        user: req.session.user,
+        lastLogin: {
+          lastLoginAt,
+          lastLoginAttemptAt,
+          lastLoginSuccess
+        }
+      });
     });
 
   } catch (err) {
@@ -836,6 +852,40 @@ router.get("/logout", (req, res) => {
     });
     res.clearCookie("connect.sid", { path: "/" });
     return res.redirect("/"); // Redirect to homepage after logout
+  });
+});
+
+// POST /logout - Handle logout from navigator.sendBeacon (tab-close logout)
+router.post("/logout", (req, res) => {
+  if (!req.session.user) {
+    logSecurityEvent({
+      eventType: "AUTH_LOGOUT",
+      outcome: "FAILURE",
+      message: "Logout attempted without an active session.",
+      req
+    });
+    return res.status(204).send(); // Return 204 No Content for beacon requests without session
+  }
+
+  req.session.destroy((err) => {
+    if (err) {
+      logSecurityEvent({
+        eventType: "AUTH_LOGOUT",
+        outcome: "FAILURE",
+        message: "Logout failed during session destruction.",
+        req,
+        metadata: { reason: err.message }
+      });
+      return res.status(204).send(); // Return 204 for beacon requests (no response body expected)
+    }
+    logSecurityEvent({
+      eventType: "AUTH_LOGOUT",
+      outcome: "SUCCESS",
+      message: "Logout succeeded.",
+      req
+    });
+    res.clearCookie("connect.sid", { path: "/" });
+    return res.status(204).send(); // Return 204 No Content for successful beacon logout
   });
 });
 

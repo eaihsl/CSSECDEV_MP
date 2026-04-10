@@ -64,10 +64,7 @@ app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false, // Do not save session if it hasn't changed
-    saveUninitialized: true, // Save new sessions
-      cookie: {
-          maxAge: 30 * 24 * 60 * 60 * 1000
-      }
+    saveUninitialized: true // Save new sessions
   })
 );
 
