@@ -40,7 +40,10 @@ const ALLOWED_AMENITIES = [
   "TV Screens on Equipment"
 ];
 const ALLOWED_LOCATIONS = [
-  "NCR",
+  "NCR West",
+  "NCR East",
+  "NCR North",
+  "NCR South",
   "Cavite",
   "Laguna",
   "Rizal",
