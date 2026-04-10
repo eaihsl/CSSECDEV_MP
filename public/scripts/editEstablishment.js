@@ -127,18 +127,15 @@ document.addEventListener("DOMContentLoaded", function () {
             formData.append("gymDesc", form.querySelector("[id^='eGymDescription-']").value);
             formData.append("address", form.querySelector("[id^='eGymAddress-']").value);
 
-            const phoneRegex = /\b(\+63\s?)?\d{3}-\d{3}-\d{4}\b/g;
+            const phoneRegex = /^(?:09\d{9}|\+639\d{9}|09\d{2}(?:[-\s]\d{3})(?:[-\s]\d{4})|\+63[\s-]?9\d{2}(?:[-\s]\d{3})(?:[-\s]\d{4}))$/;
 
             const contactInput = form.querySelector("[id^='eGymContact-']");
             let contactNumber = contactInput.value.trim();
 
-            if (contactNumber === "" || contactNumber.match(phoneRegex) || contactNumber.startsWith("+63")) {
-                if (!contactNumber.startsWith("+63") && contactNumber !== "") {
-                    contactNumber = '+63 ' + contactNumber;
-                }
+            if (contactNumber === "" || phoneRegex.test(contactNumber)) {
                 formData.append("contactNumber", contactNumber);
             } else {
-                alert("Invalid phone number. Please enter a valid contact number.");
+                alert("Invalid phone number. Use 09189039028 or +639189039028. Spaces or hyphens are also accepted.");
                 return;
             }
 

@@ -26,7 +26,7 @@ const MAX_SECURITY_ANSWER_LENGTH = 200;
 const MAX_GYM_NAME_LENGTH = 100;
 const MAX_GYM_DESC_LENGTH = 500;
 const MAX_GYM_ADDRESS_LENGTH = 200;
-const PHONE_NUMBER_PATTERN = /^\+63 \d{3}-\d{3}-\d{4}$/;
+const PHONE_NUMBER_PATTERN = /^(?:09\d{9}|\+639\d{9}|09\d{2}(?:[-\s]\d{3})(?:[-\s]\d{4})|\+63[\s-]?9\d{2}(?:[-\s]\d{3})(?:[-\s]\d{4}))$/;
 const ALLOWED_AMENITIES = [
   "Showers",
   "Parking",
@@ -1106,7 +1106,7 @@ router.post("/createGym", isAuthenticated, requireBusinessRole, async (req, res)
       logInputValidationFailure(req, "Create gym rejected: invalid contact number format.", {
         contactNumber
       });
-      return res.status(400).json({ message: "Invalid contact number format." });
+      return res.status(400).json({ message: "Invalid contact number format. Use 09189039028 or +639189039028." });
     }
 
     const amenitiesList = Array.isArray(amenities) ? amenities : amenities ? [amenities] : [];
@@ -1122,11 +1122,11 @@ router.post("/createGym", isAuthenticated, requireBusinessRole, async (req, res)
 
     // [2.3.2] Range validation: contact number is required field with strict format.
     if (!contactNumber || typeof contactNumber !== "string" || !PHONE_NUMBER_PATTERN.test(contactNumber)) {
-      logInputValidationFailure(req, "Create gym rejected: contact number is required and must match format +63 XXX-XXX-XXXX.", {
+      logInputValidationFailure(req, "Create gym rejected: contact number is required and must be a valid Philippine mobile number.", {
         contactNumberProvided: !!contactNumber,
         contactNumberFormat: contactNumber ? PHONE_NUMBER_PATTERN.test(contactNumber) : null
       });
-      return res.status(400).json({ message: "Contact number is required and must match format +63 XXX-XXX-XXXX." });
+      return res.status(400).json({ message: "Contact number is required and must be a valid Philippine mobile number like 09189039028 or +639189039028." });
     }
 
     // [2.3.2] Range validation: address cannot be empty string if provided.
@@ -1463,7 +1463,7 @@ router.post("/createGymWithImage", isAuthenticated, requireBusinessRole, gymUplo
       logInputValidationFailure(req, "Create gym with image rejected: invalid contact number format.", {
         contactNumber
       });
-      return res.status(400).json({ message: "Invalid contact number format." });
+      return res.status(400).json({ message: "Invalid contact number format. Use 09189039028 or +639189039028." });
     }
 
     const normalizedAmenities = amenities ?? req.body["amenities[]"];
@@ -1484,11 +1484,11 @@ router.post("/createGymWithImage", isAuthenticated, requireBusinessRole, gymUplo
 
     // [2.3.2] Range validation: contact number is required field with strict format.
     if (!contactNumber || typeof contactNumber !== "string" || !PHONE_NUMBER_PATTERN.test(contactNumber)) {
-      logInputValidationFailure(req, "Create gym with image rejected: contact number is required and must match format +63 XXX-XXX-XXXX.", {
+      logInputValidationFailure(req, "Create gym with image rejected: contact number is required and must be a valid Philippine mobile number.", {
         contactNumberProvided: !!contactNumber,
         contactNumberFormat: contactNumber ? PHONE_NUMBER_PATTERN.test(contactNumber) : null
       });
-      return res.status(400).json({ message: "Contact number is required and must match format +63 XXX-XXX-XXXX." });
+      return res.status(400).json({ message: "Contact number is required and must be a valid Philippine mobile number like 09189039028 or +639189039028." });
     }
 
     // [2.3.2] Range validation: address cannot be empty string if provided.

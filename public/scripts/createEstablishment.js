@@ -88,38 +88,18 @@ document.addEventListener("DOMContentLoaded", function () {
             formData.append("gymDesc", gymDesc);
             formData.append("address", gymAddress);
 
-            const phoneRegex = /\b\d{3}-\d{3}-\d{4}\b/g;
-
-            const formatPhoneNumber = (number) => {
-                if (/^\d{10}$/.test(number)) {
-                    return `${number.slice(0, 3)}-${number.slice(3, 6)}-${number.slice(6)}`;
-                }
-                return number;
-            };
+            const phoneRegex = /^(?:09\d{9}|\+639\d{9}|09\d{2}(?:[-\s]\d{3})(?:[-\s]\d{4})|\+63[\s-]?9\d{2}(?:[-\s]\d{3})(?:[-\s]\d{4}))$/;
 
             const contactInput = document.getElementById("gymContact");
             let contactNumber = contactInput.value.trim();
 
-            // [2.3.1] Input validation: reject invalid phone input before processing.
-            const isTenDigitPhone = /^\d{10}$/.test(contactNumber);
-            const isDashedPhone = /^\d{3}-\d{3}-\d{4}$/.test(contactNumber);
-            if (contactNumber !== "" && !isTenDigitPhone && !isDashedPhone) {
-                alert("Invalid phone number. Please use 10 digits or ddd-ddd-dddd format.");
+            // [2.3.1] Input validation: reject invalid Philippine mobile-number input before processing.
+            if (contactNumber !== "" && !phoneRegex.test(contactNumber)) {
+                alert("Invalid phone number. Please use a valid mobile number.");
                 return;
             }
 
-            contactNumber = formatPhoneNumber(contactNumber);
-
-            if (contactNumber.match(phoneRegex)) {
-                contactNumber = '+63 ' + contactNumber;
-                formData.append("contactNumber", contactNumber);
-
-            } else if(contactNumber === ""){
-                formData.append("contactNumber", contactNumber);
-            } else{
-                alert("Invalid phone number. Please enter a valid contact number.");
-                return;
-            }
+            formData.append("contactNumber", contactNumber);
 
             const amenities = document.querySelectorAll("input[name='amenities[]']:checked");
             amenities.forEach(input => formData.append("amenities[]", input.value));
